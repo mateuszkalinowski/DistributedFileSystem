@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Strona główna</title>
+    <link rel="stylesheet" type="text/css" href="/bootstrap/css/bootstrap.min.css"/>
+    <script src="/js/loginPage.js"></script>
+</head>
+<body class="bg-light">
+
+<div class="row mt-3">
+    <div class="col-md-4 mx-auto text-center">
+        <form method="POST" action="/fileUpload" enctype="multipart/form-data">
+            Wybierz plik do dodania: <input type="file" name="file">
+            <input type="submit" value="Wyślij">
+        </form>
+    </div>
+</div>
+</body>
+</html>
