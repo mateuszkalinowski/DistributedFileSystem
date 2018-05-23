@@ -1,33 +1,46 @@
-package pl.dfs.distributedfilesystem.dataNodes;
+package pl.dfs.distributedfilesystem.nodes;
 
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Repository;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 
 @Component
-public class DataNodes {
+public class DataNodesRepository {
 
-    public DataNodes(){
-        dataNodeArrayList = new ArrayList<>();
+    public DataNodesRepository(){
         try {
-            dataNodeArrayList.add(new DataNode("localhost", 4444));
-        }
-        catch (Exception e) {
+            dataNodeArrayList = new ArrayList<>();
+
+            File nameNodePath = new File(rootPath);
+
+            if (!nameNodePath.exists())
+                nameNodePath.mkdir();
+
+            File nameNodeFilesInformationPath = new File(rootPath + File.separator + "configuration");
+
+            if (!nameNodeFilesInformationPath.exists())
+                nameNodeFilesInformationPath.mkdir();
+
+            if (!new File(rootPath + File.separator + "configuration" + File.separator + "nodes").exists()) {
+                new File(rootPath + File.separator + "configuration" + File.separator + "nodes").createNewFile();
+            }
+            Scanner in = new Scanner(new File(rootPath + File.separator + "configuration" + File.separator + "nodes"));
+            while(in.hasNextLine()) {
+                try {
+                    String line = in.nextLine();
+                    String divided[] = line.split(":");
+                    dataNodeArrayList.add(new DataNode(divided[0], Integer.parseInt(divided[1])));
+                } catch (Exception ignored){}
+            }
+            for (DataNode dataNode : dataNodeArrayList)
+                occupiedSpaceOnNodes.put(dataNode.getAddress(), 0);
+        } catch (Exception e) {
 
         }
-        try {
-            dataNodeArrayList.add(new DataNode("localhost", 4445));
-        }
-        catch (Exception e) {
-
-        }
-
-        for(DataNode dataNode : dataNodeArrayList)
-            occupiedSpaceOnNodes.put(dataNode.getAddress(),0);
     }
 
     public DataNode get(int i) {
@@ -94,4 +107,6 @@ public class DataNodes {
     }
 
     Map<String,Integer> occupiedSpaceOnNodes = new HashMap<>();
+
+    String rootPath = System.getProperty("user.home") + File.separator + "dsfNameNode";
 }

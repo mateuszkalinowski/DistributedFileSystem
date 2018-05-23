@@ -1,4 +1,4 @@
-package pl.dfs.distributedfilesystem.filesDatabase;
+package pl.dfs.distributedfilesystem.files;
 
 public class SingleFile {
     private String name;

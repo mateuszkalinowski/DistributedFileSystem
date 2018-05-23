@@ -1,4 +1,4 @@
-package pl.dfs.distributedfilesystem.dataNodes;
+package pl.dfs.distributedfilesystem.nodes;
 
 import org.springframework.beans.factory.BeanCreationException;
 

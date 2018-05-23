@@ -10,14 +10,12 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
-import pl.dfs.distributedfilesystem.dataNodes.DataNode;
-import pl.dfs.distributedfilesystem.dataNodes.DataNodes;
-import pl.dfs.distributedfilesystem.filesDatabase.Files;
-import pl.dfs.distributedfilesystem.filesDatabase.SingleFile;
+import pl.dfs.distributedfilesystem.nodes.DataNodesRepository;
+import pl.dfs.distributedfilesystem.files.FilesRepository;
+import pl.dfs.distributedfilesystem.files.SingleFile;
 import pl.dfs.distributedfilesystem.models.FileOnFileList;
 
 import java.io.*;
-import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,10 +24,10 @@ import java.util.List;
 public class FilesAccessController {
 
     @Autowired
-    DataNodes dataNodes;
+    DataNodesRepository dataNodesRepository;
 
     @Autowired
-    Files files;
+    FilesRepository filesRepository;
 
 
     @RequestMapping("/")
@@ -37,7 +35,7 @@ public class FilesAccessController {
 
         List<FileOnFileList> filesOnTheList = new ArrayList<>();
 
-        for(SingleFile singleFile:files.getAllFiles()) {
+        for(SingleFile singleFile: filesRepository.getAllFiles()) {
             filesOnTheList.add(new FileOnFileList(singleFile.getName(),singleFile.getSize()));
         }
         model.addAttribute("filesOnTheList",filesOnTheList);
@@ -47,11 +45,11 @@ public class FilesAccessController {
     @RequestMapping("/fileUpload")
     public String fileUpload(@RequestParam("file") MultipartFile file) {
         if (!file.isEmpty()) {
-            if(!files.checkIfExist(file.getOriginalFilename())) {
+            if(!filesRepository.checkIfExist(file.getOriginalFilename())) {
                 try {
                     byte[] bytes = file.getBytes();
                     String rootPath = System.getProperty("user.home");
-                    File dir = new File(rootPath + File.separator + "nameNode");
+                    File dir = new File(rootPath + File.separator + "dsfNameNode");
                     if (!dir.exists())
                         dir.mkdirs();
                     File serverFile = new File(dir.getAbsolutePath()
@@ -61,19 +59,19 @@ public class FilesAccessController {
                     stream.write(bytes);
                     stream.close();
                     try {
-                        String address = dataNodes.getLeastOccupiedNode();
+                        String address = dataNodesRepository.getLeastOccupiedNode();
 
-                        dataNodes.get(address).writeString("save ");
-                        dataNodes.get(address).writeString("\"" + file.getOriginalFilename() + "\" ");
-                        dataNodes.get(address).writeFile(serverFile);
-                        dataNodes.get(address).writeFlush();
+                        dataNodesRepository.get(address).writeString("save ");
+                        dataNodesRepository.get(address).writeString("\"" + file.getOriginalFilename() + "\" ");
+                        dataNodesRepository.get(address).writeFile(serverFile);
+                        dataNodesRepository.get(address).writeFlush();
 
                         serverFile.delete();
 
-                        String response = dataNodes.get(address).readResponse();
+                        String response = dataNodesRepository.get(address).readResponse();
 
                         if (response.equals("success")) {
-                            files.addFile(new SingleFile(file.getOriginalFilename(), bytes.length, dataNodes.get(address).getAddress()));
+                            filesRepository.addFile(new SingleFile(file.getOriginalFilename(), bytes.length, dataNodesRepository.get(address).getAddress()));
                         }
 
                     } catch (Exception ignored) {
@@ -90,12 +88,12 @@ public class FilesAccessController {
 
     @RequestMapping("/downloadFile")
     public ResponseEntity<byte[]> downloadFile(@RequestParam String filename) {
-        String address = files.getFileNode(filename);
-        dataNodes.get(address).writeString("download ");
-        dataNodes.get(address).writeString("\"" + filename + "\" ");
-        dataNodes.get(address).writeFlush();
+        String address = filesRepository.getFileNode(filename);
+        dataNodesRepository.get(address).writeString("download ");
+        dataNodesRepository.get(address).writeString("\"" + filename + "\" ");
+        dataNodesRepository.get(address).writeFlush();
 
-        byte[] toSend = dataNodes.get(address).readResponseBytes();
+        byte[] toSend = dataNodesRepository.get(address).readResponseBytes();
 
         HttpHeaders responseHeaders = new HttpHeaders();
         responseHeaders.set("charset", "utf-8");
@@ -110,15 +108,15 @@ public class FilesAccessController {
 
     @RequestMapping("/deleteFile")
     public String fileDelete(@RequestParam String filename) {
-        String address = files.getFileNode(filename);
-        dataNodes.get(address).writeString("delete ");
-        dataNodes.get(address).writeString("\"" + filename + "\" ");
-        dataNodes.get(address).writeFlush();
+        String address = filesRepository.getFileNode(filename);
+        dataNodesRepository.get(address).writeString("delete ");
+        dataNodesRepository.get(address).writeString("\"" + filename + "\" ");
+        dataNodesRepository.get(address).writeFlush();
 
-        String response = dataNodes.get(address).readResponse();
+        String response = dataNodesRepository.get(address).readResponse();
 
         if(response.equals("success")) {
-            files.deleteFile(filename);
+            filesRepository.deleteFile(filename);
         }
         return "redirect:/";
     }

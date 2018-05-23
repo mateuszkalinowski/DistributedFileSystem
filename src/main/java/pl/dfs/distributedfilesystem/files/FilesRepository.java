@@ -1,31 +1,33 @@
-package pl.dfs.distributedfilesystem.filesDatabase;
+package pl.dfs.distributedfilesystem.files;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Repository;
-import pl.dfs.distributedfilesystem.dataNodes.DataNodes;
+import pl.dfs.distributedfilesystem.nodes.DataNodesRepository;
 
 import java.io.*;
 import java.util.*;
 
 @Component
-public class Files {
+public class FilesRepository {
 
     @Autowired
-    DataNodes dataNodes;
+    DataNodesRepository dataNodesRepository;
 
-    public Files(){
+    public FilesRepository(){
         try {
             fileArrayList = new ArrayList<>();
             File nameNodePath = new File(rootPath);
 
             if (!nameNodePath.exists())
                 nameNodePath.mkdir();
-            if (!new File(rootPath + File.separator + "filesInformation").exists()) {
-                new File(rootPath + File.separator + "filesInformation").createNewFile();
+
+            File nameNodeFilesInformationPath = new File(rootPath + File.separator + "files");
+
+            if(!nameNodeFilesInformationPath.exists())
+                nameNodeFilesInformationPath.mkdir();
+
+            if (!new File(rootPath + File.separator + "files" + File.separator + "filesInformation").exists()) {
+                new File(rootPath + File.separator + "files" + File.separator +"filesInformation").createNewFile();
             }
             Scanner in = new Scanner(new File(rootPath + File.separator + "filesInformation"));
             while(in.hasNextLine()) {
@@ -58,7 +60,7 @@ public class Files {
     public void deleteFile(String filename) {
         for(int i = fileArrayList.size()-1;i>=0;i--) {
             if(fileArrayList.get(i).getName().equals(filename)) {
-                dataNodes.removeOccupiedSpaceFromNode(fileArrayList.get(i).getNode(),fileArrayList.get(i).getSize());
+                dataNodesRepository.removeOccupiedSpaceFromNode(fileArrayList.get(i).getNode(),fileArrayList.get(i).getSize());
                 fileArrayList.remove(i);
             }
         }
@@ -67,7 +69,7 @@ public class Files {
 
     public void writeFilesInformationFile(){
         try {
-            PrintWriter fileInformationWriter = new PrintWriter(new File(rootPath + File.separator + "filesInformation"));
+            PrintWriter fileInformationWriter = new PrintWriter(new File(rootPath + File.separator + "files" + File.separator+  "filesInformation"));
             for(SingleFile singleFile : fileArrayList)
                 fileInformationWriter.println("\"" + singleFile.getName() + "\" " + singleFile.getSize() + " " + singleFile.getNode());
             fileInformationWriter.close();
@@ -79,7 +81,7 @@ public class Files {
 
     public void initializeDataNodesSizes(){
         for(SingleFile singleFile: fileArrayList) {
-            dataNodes.addOccupiedSpaceToNode(singleFile.getNode(),singleFile.getSize());
+            dataNodesRepository.addOccupiedSpaceToNode(singleFile.getNode(),singleFile.getSize());
         }
     }
 
@@ -105,5 +107,5 @@ public class Files {
 
     private ArrayList<SingleFile> fileArrayList;
 
-    String rootPath = System.getProperty("user.home") + File.separator + "nameNode";
+    String rootPath = System.getProperty("user.home") + File.separator + "dsfNameNode";
 }
