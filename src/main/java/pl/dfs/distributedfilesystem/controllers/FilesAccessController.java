@@ -10,6 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import pl.dfs.distributedfilesystem.models.DataNodeOnTheList;
 import pl.dfs.distributedfilesystem.nodes.DataNodesRepository;
 import pl.dfs.distributedfilesystem.files.FilesRepository;
 import pl.dfs.distributedfilesystem.files.SingleFile;
@@ -119,5 +120,21 @@ public class FilesAccessController {
             filesRepository.deleteFile(filename);
         }
         return "redirect:/";
+    }
+
+    @RequestMapping("/about")
+    public String about(Model model){
+
+        ArrayList<DataNodeOnTheList> dataNodeOnTheListArrayList = new ArrayList<>();
+        System.out.println(dataNodesRepository.getNumber());
+        for(int i = 0; i < dataNodesRepository.getNumber();i++) {
+            dataNodeOnTheListArrayList.add(new DataNodeOnTheList(dataNodesRepository.get(i).getAddress(),dataNodesRepository.getStorage(dataNodesRepository.get(i).getAddress())));
+        }
+
+        model.addAttribute("dataNodesOnTheList",dataNodeOnTheListArrayList);
+
+
+
+        return "about";
     }
 }

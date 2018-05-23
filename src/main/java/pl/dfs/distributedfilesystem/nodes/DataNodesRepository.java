@@ -25,10 +25,10 @@ public class DataNodesRepository {
             if (!nameNodeFilesInformationPath.exists())
                 nameNodeFilesInformationPath.mkdir();
 
-            if (!new File(rootPath + File.separator + "configuration" + File.separator + "nodes").exists()) {
-                new File(rootPath + File.separator + "configuration" + File.separator + "nodes").createNewFile();
+            if (!new File(rootPath + File.separator + "configuration" + File.separator + "dataNodes").exists()) {
+                new File(rootPath + File.separator + "configuration" + File.separator + "dataNodes").createNewFile();
             }
-            Scanner in = new Scanner(new File(rootPath + File.separator + "configuration" + File.separator + "nodes"));
+            Scanner in = new Scanner(new File(rootPath + File.separator + "configuration" + File.separator + "dataNodes"));
             while(in.hasNextLine()) {
                 try {
                     String line = in.nextLine();
@@ -105,6 +105,12 @@ public class DataNodesRepository {
         return address;
 
     }
+
+    public int getStorage(String address) {
+        return occupiedSpaceOnNodes.get(address);
+    }
+
+
 
     Map<String,Integer> occupiedSpaceOnNodes = new HashMap<>();
 

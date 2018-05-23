@@ -29,7 +29,7 @@ public class FilesRepository {
             if (!new File(rootPath + File.separator + "files" + File.separator + "filesInformation").exists()) {
                 new File(rootPath + File.separator + "files" + File.separator +"filesInformation").createNewFile();
             }
-            Scanner in = new Scanner(new File(rootPath + File.separator + "filesInformation"));
+            Scanner in = new Scanner(new File(rootPath + File.separator +"files" + File.separator + "filesInformation"));
             while(in.hasNextLine()) {
                 try {
                     String line = in.nextLine();
@@ -48,7 +48,7 @@ public class FilesRepository {
                 }
             }
         } catch (IOException e) {
-            System.out.println("DistributedFileSystem cannot create configuration files!");
+            e.printStackTrace();
         }
     }
 
@@ -75,7 +75,7 @@ public class FilesRepository {
             fileInformationWriter.close();
         }
         catch (Exception e) {
-            System.out.println("DistributedFileSystem cannot create configuration files!");
+            System.out.println("DistributedFileSystem cannot create configuration files! (writeFilesInformationFile)");
         }
     }
 

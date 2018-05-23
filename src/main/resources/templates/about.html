@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Strona główna</title>
+    <link rel="stylesheet" type="text/css" href="/bootstrap/css/bootstrap.min.css"/>
+    <script src="/js/loginPage.js"></script>
+</head>
+<body class="bg-light">
+<div class="container">
+<nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-success"
+     th:include="navigationBar :: navigationBar"/>
+<div class="row mt-3">
+    <div class="col-md-8 mx-auto text-center">
+        <h4 class="my-2">Podłączone węzły danych:</h4>
+
+        <table class="w-100 table mx-auto table-hover table-bordered table-sm" id="filesListTable" border="1">
+            <thead class="thead-light">
+            <tr>
+                <th>Adres</th>
+                <th>Zajęte miejsce</th>
+
+            </tr>
+            </thead>
+            <tr th:each="dataNode: ${dataNodesOnTheList}" th:object="${dataNode}">
+                <td th:text="*{address}">text</td>
+                <td th:text="*{storage}"></td>
+            </tr>
+        </table>
+
+    </div>
+</div>
+</div>
+</body>
+</html>
