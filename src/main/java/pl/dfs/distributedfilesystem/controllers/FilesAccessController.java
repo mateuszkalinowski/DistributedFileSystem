@@ -209,13 +209,15 @@ public class FilesAccessController {
         ArrayList<String> divided = new ArrayList<>(Arrays.asList(addresses.split(",")));
         for(int i = divided.size()-1;i>=0;i--) {
             String address = divided.get(i);
-            dataNodesRepository.get(address).writeString("delete ");
-            dataNodesRepository.get(address).writeString("\"" + filename + "\" ");
-            dataNodesRepository.get(address).writeFlush();
-            String response = dataNodesRepository.get(address).readResponse();
-            if (response.equals("success")) {
-                divided.remove(i);
-            }
+            try {
+                dataNodesRepository.get(address).writeString("delete ");
+                dataNodesRepository.get(address).writeString("\"" + filename + "\" ");
+                dataNodesRepository.get(address).writeFlush();
+                String response = dataNodesRepository.get(address).readResponse();
+                if (response.equals("success")) {
+                    divided.remove(i);
+                }
+            } catch (Exception ignored){}
         }
         if(divided.size()==0)
             filesRepository.deleteFile(filename);
@@ -227,6 +229,7 @@ public class FilesAccessController {
             for(int i = 0; i<filesRepository.getAllFiles().size();i++) {
                 if(filesRepository.getAllFiles().get(i).getName().equals(filename)){
                     filesRepository.getAllFiles().get(i).setNode(finalNodes);
+                    filesRepository.writeFilesInformationFile();
                 }
             }
         }
