@@ -8,116 +8,97 @@
 </head>
 <body class="bg-light">
 <div class="container">
-    <nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-success"
+    <nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-primary"
          th:include="navigationBar :: navigationBar"/>
     <div class="row mt-3">
         <div class="col-md-8 mx-auto text-center">
-            <h4 class="my-2">Dodaj plik:</h4>
-            <form method="POST" action="/fileUpload" enctype="multipart/form-data">
-                <input type="file" name="file">
+            <form class="form-inline" method="POST" action="/fileUpload" enctype="multipart/form-data">
+                <input type="file" class="my-1" name="file">
+                <label for="replication" class="mx-1"><b>Replikacja:</b></label>
+                <select id="replication" th:name="replication" class="mx-1">
+                    <option th:each="c: ${replicationValues}" th:value="${c}" th:text="${c}"></option>
+                </select>
                 <input type="submit" value="Wyślij">
             </form>
         </div>
-    </div>
-
-    <div class="row mt-3">
-        <div class="col-md-12 mx-auto text-center">
-            <p th:text="'Ścieżka: ' + ${session.path}"></p>
-        </div>
-    </div>
-
-    <div class="row mt-3">
-        <div class="col-md-10 mx-auto text-center">
-            <h4 class="my-2">Twoje pliki:</h4>
-            <table class="w-100 table mx-auto table-hover table-bordered table-sm" id="filesListTable" border="1">
-                <thead class="thead-light">
-                <tr>
-                    <th style="width: 70%;">Nazwa</th>
-                    <th style="width: 10%;">Rozmiar</th>
-                    <th style="width: 10%;">Pobierz</th>
-                    <th style="width: 10%;">Usuń</th>
-                </tr>
-                </thead>
-                <tr th:each="singleFile: ${filesOnTheList}" th:object="${singleFile}">
-                    <td th:text="*{name}">text</td>
-                    <td th:text="*{size}"></td>
-                    <td>
-                        <!--class="btn border border-dark btn-sm btn-block" -->
-                        <form method="post" action="/downloadFile">
-                            <input type="hidden" th:name="filename" th:value="${singleFile.name}"/>
-                            <input type="submit" value="pobierz"/>
-                        </form>
-                    </td>
-                    <td>
-                        <form method="post" action="/deleteFile">
-                            <input type="hidden" th:name="filename" th:value="${singleFile.name}"/>
-                            <input type="submit" value="usuń"/>
-                        </form>
-                    </td>
-                </tr>
-            </table>
-        </div>
-    </div>
-
-    <div class="row mt-3">
-        <div class="col-md-12 mx-auto text-center">
-            <h4 class="my-2">Twoje foldery:</h4>
-        </div>
         <div class="col-md-4 mx-auto text-center">
-            <table class="w-100 table mx-auto table-hover table-bordered table-sm" id="foldersListTable" border="1">
-                <thead class="thead-light">
-                <tr>
-                    <th style="width: 80%;">Nazwa</th>
-                    <th style="width: 10%;">Przejdź</th>
-                    <th style="width: 10%;">Usuń</th>
-                </tr>
-                </thead>
-                <tr th:each="singleFolder: ${foldersOnTheList}" th:object="${singleFolder}">
-                    <td th:text="${singleFolder}">text</td>
-                    <td>
-                        <form method="post" action="/enterFolder">
-                            <input type="hidden" th:name="foldername" th:value="${singleFolder}"/>
-                            <input type="submit" value="wejdź"/>
-                        </form>
-                    </td>
-                    <td>
-                        <form method="post" action="/deleteFolder">
-                            <input type="hidden" th:name="foldername" th:value="${singleFolder}"/>
-                            <input type="submit" value="usuń"/>
-                        </form>
-                    </td>
-                </tr>
-            </table>
-        </div>
-        <div class="col-md-4 mx-auto text-center">
-            <form action="/addFolder">
-                <label for="folderName" class="mx-1"><b>Nazwa :</b></label>
-                <input class="form-control mx-1" th:name="folderName" id="folderName" type="text" /><br>
+            <form class="form-inline" action="/addFolder">
+                <input class="form-control mx-1" th:name="folderName" id="folderName" type="text"/>
                 <input type="submit" class="mx-1 " value="Dodaj folder">
             </form>
         </div>
     </div>
-
-
-
-    <div class="row mt-3">
-        <div class="col-md-12 mx-auto text-center">
-            <form action="/goBack">
+    <hr>
+    <div class="row">
+        <div class="col-md-10 text-left">
+            <p th:text="'Ścieżka: ' + ${session.path} "></p>
+        </div>
+        <div class="col-md-2">
+            <form class="my-1" action="/goBack">
                 <input type="submit" class="mx-1" value="Wróć">
             </form>
         </div>
     </div>
+    <hr>
+
     <div class="row mt-3">
-        <div class="col-md-12 mx-auto text-center">
-            <p id="errorField1" class="text-danger" th:if="${error}=='badFolderName'">Niepoprawna nazwa folderu.
-            Nazwa folderu musi składac się tylko ze znaków alfanumerycznych i nie może zawierać spacji.</p>
-            <p id="errorField2" class="text-danger" th:if="${error}=='fileAlreadyExists'">Taki plik już istnieje.
-            W całym systemie plików może istnieć tylko jeden plik o danej nazwie.</p>
-            <p id="errorField3" class="text-danger" th:if="${error}=='zeroNodes'">W systemie nie ma żadnych
-            węzłów danych. Sprawdź konfiguracje w pliku dfsNameNode/configuration/dataNodes.</p>
-            <p id="errorField4" class="text-danger" th:if="${error}=='noFileToSend'">Nie wybrano pliko do
-            wysłania.</p>
+        <div class="col-md-10 mx-auto text-center">
+            <table class="w-100 table mx-auto table-hover table-bordered table-sm" id="filesListTable" border="1">
+                <thead class="thead-light">
+                <tr>
+                    <th style="width: 60%;">Nazwa</th>
+                    <th style="width: 10%;">Rozmiar</th>
+                    <th style="width: 10%;">Replikacja</th>
+                    <th style="width: 10%;">Akcja</th>
+                    <th style="width: 10%;">Usuń</th>
+                </tr>
+                </thead>
+                <tr th:each="singleObject: ${objectsOnTheList}" th:object="${singleObject}">
+                    <td th:text="*{name}">text</td>
+                    <td th:text="*{size}"></td>
+                    <td th:text="*{replication}"></td>
+                    <td th:if="${singleObject.type}=='file'">
+                        <form method="post" action="/downloadFile">
+                            <input type="hidden" th:name="filename" th:value="${singleObject.name}"/>
+                            <input type="submit" value="pobierz"/>
+                        </form>
+                    </td>
+                    <td th:if="${singleObject.type}=='file'">
+                        <form method="post" action="/deleteFile">
+                            <input type="hidden" th:name="filename" th:value="${singleObject.name}"/>
+                            <input type="submit" value="usuń"/>
+                        </form>
+                    </td>
+
+                    <td th:if="${singleObject.type}=='folder'">
+                        <form method="post" action="/enterFolder">
+                            <input type="hidden" th:name="foldername" th:value="${singleObject.name}"/>
+                            <input type="submit" value="wejdź"/>
+                        </form>
+                    </td>
+                    <td th:if="${singleObject.type}=='folder'">
+                        <form method="post" action="/deleteFolder">
+                            <input type="hidden" th:name="foldername" th:value="${singleObject.name}"/>
+                            <input type="submit" value="usuń"/>
+                        </form>
+                    </td>
+
+                </tr>
+            </table>
         </div>
+    </div>
+</div>
+<div class="row mt-3">
+    <div class="col-md-12 mx-auto text-center">
+        <p id="errorField1" class="text-danger" th:if="${error}=='badFolderName'">Niepoprawna nazwa folderu.
+            Nazwa folderu musi składac się tylko ze znaków alfanumerycznych i nie może zawierać spacji.</p>
+        <p id="errorField2" class="text-danger" th:if="${error}=='fileAlreadyExists'">Taki plik już istnieje.
+            W całym systemie plików może istnieć tylko jeden plik o danej nazwie.</p>
+        <p id="errorField3" class="text-danger" th:if="${error}=='zeroNodes'">W systemie nie ma żadnych
+            węzłów danych. Sprawdź konfiguracje w pliku dfsNameNode/configuration/dataNodes.</p>
+        <p id="errorField4" class="text-danger" th:if="${error}=='noFileToSend'">Nie wybrano pliko do
+            wysłania.</p>
+    </div>
 </div>
 </div>
 </body>

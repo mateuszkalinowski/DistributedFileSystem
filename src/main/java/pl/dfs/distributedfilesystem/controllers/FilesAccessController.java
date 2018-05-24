@@ -12,14 +12,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import pl.dfs.distributedfilesystem.folders.FoldersRepository;
 import pl.dfs.distributedfilesystem.models.DataNodeOnTheList;
+import pl.dfs.distributedfilesystem.models.ObjectOnTheList;
 import pl.dfs.distributedfilesystem.nodes.DataNodesRepository;
 import pl.dfs.distributedfilesystem.files.FilesRepository;
 import pl.dfs.distributedfilesystem.files.SingleFile;
-import pl.dfs.distributedfilesystem.models.FileOnFileList;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -53,7 +55,7 @@ public class FilesAccessController {
             session.setAttribute("error","");
         }
 
-        List<FileOnFileList> filesOnTheList = new ArrayList<>();
+        List<ObjectOnTheList> objectsOnTheList = new ArrayList<>();
 
         for(SingleFile singleFile: filesRepository.getFilesByPathWhenExists(session.getAttribute("path").toString())) {
             double size = singleFile.getSize();
@@ -72,7 +74,11 @@ public class FilesAccessController {
             String sizeString = String.valueOf(size);
             sizeString = sizeString.replaceFirst(".0","");
 
-            filesOnTheList.add(new FileOnFileList(singleFile.getName(),sizeString + " " + unit));
+            objectsOnTheList.add(new ObjectOnTheList(singleFile.getName(),sizeString + " " + unit,String.valueOf(singleFile.getNode().split(",").length),"file"));
+        }
+
+        for(String key : foldersRepository.subfoldersOfFolder(session.getAttribute("path").toString())) {
+            objectsOnTheList.add(new ObjectOnTheList(key,"-","-","folder"));
         }
 
         if(session.getAttribute("error").equals("badFolderName")) {
@@ -92,19 +98,29 @@ public class FilesAccessController {
             model.addAttribute("error","");
         }
 
-        model.addAttribute("filesOnTheList",filesOnTheList);
-        model.addAttribute("foldersOnTheList",foldersRepository.subfoldersOfFolder(session.getAttribute("path").toString()));
+        int numberOfNodesForReplication = dataNodesRepository.getNumber();
+        ArrayList<String> wartosci = new ArrayList<>();
+        for(int i = 0; i < numberOfNodesForReplication;i++) {
+            wartosci.add(String.valueOf((i+1)));
+        }
+
+        model.addAttribute("replicationValues",wartosci);
+        model.addAttribute("objectsOnTheList",objectsOnTheList);
+
+        //model.addAttribute("foldersOnTheList",foldersRepository.subfoldersOfFolder(session.getAttribute("path").toString()));
+
         return "index";
     }
 
     @RequestMapping("/fileUpload")
-    public String fileUpload(@RequestParam("file") MultipartFile file,HttpSession session) {
+    public String fileUpload(@RequestParam("file") MultipartFile file,HttpSession session,HttpServletRequest request) {
 
         if(dataNodesRepository.getNumber()!=0) {
 
             if (!file.isEmpty()) {
                 if (!filesRepository.checkIfExist(file.getOriginalFilename())) {
                     try {
+                      // System.out.println(request.getParameter("replication"));
                         byte[] bytes = file.getBytes();
                         String rootPath = System.getProperty("user.home");
                         File dir = new File(rootPath + File.separator + "dsfNameNode");
@@ -117,20 +133,22 @@ public class FilesAccessController {
                         stream.write(bytes);
                         stream.close();
                         try {
-                            String address = dataNodesRepository.getLeastOccupiedNode();
-
-                            dataNodesRepository.get(address).writeString("save ");
-                            dataNodesRepository.get(address).writeString("\"" + file.getOriginalFilename() + "\" ");
-                            dataNodesRepository.get(address).writeFile(serverFile);
-                            dataNodesRepository.get(address).writeFlush();
-
-                            serverFile.delete();
-
-                            String response = dataNodesRepository.get(address).readResponse();
-
-                            if (response.equals("success")) {
-                                filesRepository.addFile(new SingleFile(file.getOriginalFilename(), bytes.length, session.getAttribute("path").toString(), dataNodesRepository.get(address).getAddress()));
+                            ArrayList<String> addresses = dataNodesRepository.getLeastOccupiedNodes(Integer.parseInt(request.getParameter("replication")));
+                            String finalAddressesLine = "";
+                            for (String address : addresses) {
+                                dataNodesRepository.get(address).writeString("save ");
+                                dataNodesRepository.get(address).writeString("\"" + file.getOriginalFilename() + "\" ");
+                                dataNodesRepository.get(address).writeFile(serverFile);
+                                dataNodesRepository.get(address).writeFlush();
+                                String response = dataNodesRepository.get(address).readResponse();
+                                if (response.equals("success")) {
+                                    finalAddressesLine+=address+",";
+                                }
+                        }
+                            if (finalAddressesLine.length()>0) {
+                                filesRepository.addFile(new SingleFile(file.getOriginalFilename(), bytes.length, session.getAttribute("path").toString(), finalAddressesLine));
                             }
+                            serverFile.delete();
 
                         } catch (Exception ignored) {
                             serverFile.delete();
@@ -154,7 +172,21 @@ public class FilesAccessController {
 
     @RequestMapping("/downloadFile")
     public ResponseEntity<byte[]> downloadFile(@RequestParam String filename) {
-        String address = filesRepository.getFileNode(filename);
+        String addresses = filesRepository.getFileNode(filename);
+
+        String address = "";
+
+        for (String key : addresses.split(",")) {
+            if (dataNodesRepository.get(key) != null) {
+                address = key;
+                break;
+            }
+        }
+
+        if(address.equals("")) {
+            return new ResponseEntity("Nie można było przetworzyc żądania", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
         dataNodesRepository.get(address).writeString("download ");
         dataNodesRepository.get(address).writeString("\"" + filename + "\" ");
         dataNodesRepository.get(address).writeFlush();
@@ -169,20 +201,34 @@ public class FilesAccessController {
 
         return new ResponseEntity<byte[]>(toSend, responseHeaders, HttpStatus.OK);
 
-       // return "redirect:/";
     }
 
     @RequestMapping("/deleteFile")
     public String fileDelete(@RequestParam String filename) {
-        String address = filesRepository.getFileNode(filename);
-        dataNodesRepository.get(address).writeString("delete ");
-        dataNodesRepository.get(address).writeString("\"" + filename + "\" ");
-        dataNodesRepository.get(address).writeFlush();
-
-        String response = dataNodesRepository.get(address).readResponse();
-
-        if(response.equals("success")) {
+        String addresses = filesRepository.getFileNode(filename);
+        ArrayList<String> divided = new ArrayList<>(Arrays.asList(addresses.split(",")));
+        for(int i = divided.size()-1;i>=0;i--) {
+            String address = divided.get(i);
+            dataNodesRepository.get(address).writeString("delete ");
+            dataNodesRepository.get(address).writeString("\"" + filename + "\" ");
+            dataNodesRepository.get(address).writeFlush();
+            String response = dataNodesRepository.get(address).readResponse();
+            if (response.equals("success")) {
+                divided.remove(i);
+            }
+        }
+        if(divided.size()==0)
             filesRepository.deleteFile(filename);
+        else {
+            String finalNodes = "";
+            for(String key : divided)
+                finalNodes+=key+",";
+
+            for(int i = 0; i<filesRepository.getAllFiles().size();i++) {
+                if(filesRepository.getAllFiles().get(i).getName().equals(filename)){
+                    filesRepository.getAllFiles().get(i).setNode(finalNodes);
+                }
+            }
         }
         return "redirect:/";
     }

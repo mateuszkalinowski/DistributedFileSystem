@@ -107,30 +107,41 @@ public class FilesRepository {
     public ArrayList<SingleFile> getFilesByPathWhenExists(String path){
         ArrayList<SingleFile> filesFromLocation = new ArrayList<>();
         for(SingleFile singleFile : fileArrayList) {
-            if(singleFile.getPath().equals(path))
-                if(dataNodesRepository.get(singleFile.getNode())!=null)
+            if(singleFile.getPath().equals(path)){
+                boolean exists = false;
+                for(String key : singleFile.getNode().split(",")) {
+                    if(dataNodesRepository.get(key)!=null) {
+                        exists = true;
+                        break;
+                    }
+                }
+                if(exists)
                     filesFromLocation.add(singleFile);
+            }
+
         }
         return filesFromLocation;
     }
 
     public void removeFilesByPathWhenExists(String path) {
         for(int i = fileArrayList.size()-1;i>=0;i--) {
-            if(dataNodesRepository.get(fileArrayList.get(i).getNode())!=null) {
                 if(fileArrayList.get(i).getPath().startsWith(path)) {
-                    String address = fileArrayList.get(i).getNode();
-                    dataNodesRepository.get(address).writeString("delete ");
-                    dataNodesRepository.get(address).writeString("\"" + fileArrayList.get(i).getName() + "\" ");
-                    dataNodesRepository.get(address).writeFlush();
+                    String addresses = fileArrayList.get(i).getNode();
 
-                    String response = dataNodesRepository.get(address).readResponse();
+                    for(String address : addresses.split(",")) {
+                        try {
+                            dataNodesRepository.get(address).writeString("delete ");
+                            dataNodesRepository.get(address).writeString("\"" + fileArrayList.get(i).getName() + "\" ");
+                            dataNodesRepository.get(address).writeFlush();
 
-                    if(response.equals("success")) {
-                        dataNodesRepository.removeOccupiedSpaceFromNode(fileArrayList.get(i).getNode(),fileArrayList.get(i).getSize());
-                        fileArrayList.remove(i);
+                            String response = dataNodesRepository.get(address).readResponse();
+                            if (response.equals("success")) {
+                                dataNodesRepository.removeOccupiedSpaceFromNode(fileArrayList.get(i).getNode(), fileArrayList.get(i).getSize());
+                            }
+                        } catch (Exception ignored){}
                     }
+                    fileArrayList.remove(i);
                 }
-            }
         }
         writeFilesInformationFile();
     }
@@ -155,17 +166,20 @@ public class FilesRepository {
         for(int i = fileArrayList.size()-1;i>=0;i--) {
             if(!foldersRepository.checkIfPathExist(fileArrayList.get(i).getPath())) {
                 if(dataNodesRepository.get(fileArrayList.get(i).getNode())!=null) {
-                    String address = fileArrayList.get(i).getNode();
-                    dataNodesRepository.get(address).writeString("delete ");
-                    dataNodesRepository.get(address).writeString("\"" + fileArrayList.get(i).getName() + "\" ");
-                    dataNodesRepository.get(address).writeFlush();
+                    String addresses = fileArrayList.get(i).getNode();
 
-                    String response = dataNodesRepository.get(address).readResponse();
+                    for(String address : addresses.split(",")) {
 
-                    if(response.equals("success")) {
-                        dataNodesRepository.removeOccupiedSpaceFromNode(fileArrayList.get(i).getNode(),fileArrayList.get(i).getSize());
-                        fileArrayList.remove(i);
+                        dataNodesRepository.get(address).writeString("delete ");
+                        dataNodesRepository.get(address).writeString("\"" + fileArrayList.get(i).getName() + "\" ");
+                        dataNodesRepository.get(address).writeFlush();
+
+                        String response = dataNodesRepository.get(address).readResponse();
+                        if(response.equals("success")) {
+                            dataNodesRepository.removeOccupiedSpaceFromNode(fileArrayList.get(i).getNode(),fileArrayList.get(i).getSize());
+                        }
                     }
+                    fileArrayList.remove(i);
                 }
             }
         }
