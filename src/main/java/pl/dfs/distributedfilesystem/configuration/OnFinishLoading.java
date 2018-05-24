@@ -6,6 +6,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 import pl.dfs.distributedfilesystem.files.FilesRepository;
 
+
 @Component
 public class OnFinishLoading
         implements ApplicationListener<ContextRefreshedEvent> {
@@ -17,6 +18,5 @@ public class OnFinishLoading
         filesRepository.initializeDataNodesSizes();
 
         filesRepository.checkCohesion();
-
     }
 }

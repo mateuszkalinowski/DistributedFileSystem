@@ -21,6 +21,12 @@
     </div>
 
     <div class="row mt-3">
+        <div class="col-md-12 mx-auto text-center">
+            <p th:text="'Ścieżka: ' + ${session.path}"></p>
+        </div>
+    </div>
+
+    <div class="row mt-3">
         <div class="col-md-10 mx-auto text-center">
             <h4 class="my-2">Twoje pliki:</h4>
             <table class="w-100 table mx-auto table-hover table-bordered table-sm" id="filesListTable" border="1">
@@ -93,12 +99,7 @@
     </div>
 
 
-    <div class="row mt-3">
-        <div class="col-md-12 mx-auto text-center">
-            <p th:text="'Ścieżka: ' + ${session.path}"></p>
-        </div>
 
-    </div>
     <div class="row mt-3">
         <div class="col-md-12 mx-auto text-center">
             <form action="/goBack">

@@ -4,9 +4,10 @@ public class DataNodeOnTheList {
     public DataNodeOnTheList() {
     }
 
-    public DataNodeOnTheList(String address, String storage) {
+    public DataNodeOnTheList(String address, String storage,String freeStorage) {
         this.address = address;
         this.storage = storage;
+        this.freeStorage = freeStorage;
     }
 
     public String getAddress() {
@@ -25,6 +26,15 @@ public class DataNodeOnTheList {
         this.storage = storage;
     }
 
+    public String getFreeStorage() {
+        return freeStorage;
+    }
+
+    public void setFreeStorage(String freeStorage) {
+        this.freeStorage = freeStorage;
+    }
+
     private String address;
     private String storage;
+    private String freeStorage;
 }

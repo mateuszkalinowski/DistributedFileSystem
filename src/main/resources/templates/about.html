@@ -17,14 +17,15 @@
         <table class="w-100 table mx-auto table-hover table-bordered table-sm" id="filesListTable" border="1">
             <thead class="thead-light">
             <tr>
-                <th style="width: 80%">Adres</th>
-                <th style="width: 20%">Zajęte miejsce</th>
-
+                <th style="width: 70%">Adres</th>
+                <th style="width: 15%">Zajęte miejsce</th>
+                <th style="width: 15%">Wolne miejsce</th>
             </tr>
             </thead>
             <tr th:each="dataNode: ${dataNodesOnTheList}" th:object="${dataNode}">
                 <td th:text="*{address}">text</td>
                 <td th:text="*{storage}"></td>
+                <td th:text="*{freeStorage}"></td>
             </tr>
         </table>
 

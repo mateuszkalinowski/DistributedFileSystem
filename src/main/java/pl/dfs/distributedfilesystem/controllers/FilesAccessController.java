@@ -251,8 +251,25 @@ public class FilesAccessController {
             String sizeString = String.valueOf(size);
             sizeString = sizeString.replaceFirst(".0","");
 
+                dataNodesRepository.get(dataNodesRepository.get(i).getAddress()).writeString("freespace ");
+                dataNodesRepository.get(dataNodesRepository.get(i).getAddress()).writeFlush();
+                String answer = dataNodesRepository.get(dataNodesRepository.get(i).getAddress()).readResponse();
 
-            dataNodeOnTheListArrayList.add(new DataNodeOnTheList(dataNodesRepository.get(i).getAddress(),sizeString + " " + unit ));
+                double freeSpace = Double.parseDouble(answer.trim());
+                String unitFreeSpace = "B";
+
+                if(freeSpace > 1000 && freeSpace < 1000000) {
+                    freeSpace = freeSpace / 1000.0;
+                    freeSpace = Math.round(freeSpace * 100.0)/100.0;
+                    unitFreeSpace = "KB";
+                }
+                else if(freeSpace > 1000000) {
+                    freeSpace = freeSpace / 1000000.0;
+                    freeSpace = Math.round(freeSpace * 100.0)/100.0;
+                    unitFreeSpace = "MB";
+                }
+
+                dataNodeOnTheListArrayList.add(new DataNodeOnTheList(dataNodesRepository.get(i).getAddress(),sizeString + " " + unit ,freeSpace + " " + unitFreeSpace));
         }
 
         model.addAttribute("dataNodesOnTheList",dataNodeOnTheListArrayList);
