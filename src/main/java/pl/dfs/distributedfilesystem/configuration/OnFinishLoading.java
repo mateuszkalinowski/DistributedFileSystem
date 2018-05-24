@@ -15,5 +15,8 @@ public class OnFinishLoading
 
     public void onApplicationEvent(ContextRefreshedEvent event) {
         filesRepository.initializeDataNodesSizes();
+
+        filesRepository.checkCohesion();
+
     }
 }

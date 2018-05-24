@@ -1,49 +1,106 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8"/>
     <title>Strona główna</title>
     <link rel="stylesheet" type="text/css" href="/bootstrap/css/bootstrap.min.css"/>
     <script src="/js/loginPage.js"></script>
 </head>
 <body class="bg-light">
 <div class="container">
-<nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-success"
-     th:include="navigationBar :: navigationBar"/>
-<div class="row mt-3">
-    <div class="col-md-8 mx-auto text-center">
-        <h4 class="my-2">Dodaj plik:</h4>
-        <form method="POST" action="/fileUpload" enctype="multipart/form-data">
-            <input type="file" name="file">
-            <input type="submit" value="Wyślij">
-        </form>
-        <h4 class="my-2">Twoje pliki:</h4>
-        <table class="w-100 table mx-auto table-hover table-bordered table-sm" id="filesListTable" border="1">
-            <thead class="thead-light">
-            <tr>
-                <th>Nazwa</th>
-                <th>Rozmiar</th>
-                <th>Pobierz</th>
-                <th>Usuń</th>
-            </tr>
-            </thead>
-            <tr th:each="singleFile: ${filesOnTheList}" th:object="${singleFile}">
-                <td th:text="*{name}">text</td>
-                <td th:text="*{size}"></td>
-                <td>
-                    <form method="post" action="/downloadFile">
-                        <input type="hidden" th:name="filename" th:value="${singleFile.name}"/>
-                        <input type="submit" class="btn border border-dark btn-sm btn-block" value="pobierz"/>
-                    </form>
-                </td>
-                <td>
-                    <form method="post" action="/deleteFile">
-                        <input type="hidden" th:name="filename" th:value="${singleFile.name}"/>
-                        <input type="submit" class="btn border border-dark btn-sm btn-block" value="usuń"/>
-                    </form>
-                </td>
-            </tr>
-        </table>
+    <nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-success"
+         th:include="navigationBar :: navigationBar"/>
+    <div class="row mt-3">
+        <div class="col-md-8 mx-auto text-center">
+            <h4 class="my-2">Dodaj plik:</h4>
+            <form method="POST" action="/fileUpload" enctype="multipart/form-data">
+                <input type="file" name="file">
+                <input type="submit" value="Wyślij">
+            </form>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-10 mx-auto text-center">
+            <h4 class="my-2">Twoje pliki:</h4>
+            <table class="w-100 table mx-auto table-hover table-bordered table-sm" id="filesListTable" border="1">
+                <thead class="thead-light">
+                <tr>
+                    <th>Nazwa</th>
+                    <th>Rozmiar</th>
+                    <th>Pobierz</th>
+                    <th>Usuń</th>
+                </tr>
+                </thead>
+                <tr th:each="singleFile: ${filesOnTheList}" th:object="${singleFile}">
+                    <td th:text="*{name}">text</td>
+                    <td th:text="*{size}"></td>
+                    <td>
+                        <form method="post" action="/downloadFile">
+                            <input type="hidden" th:name="filename" th:value="${singleFile.name}"/>
+                            <input type="submit" class="btn border border-dark btn-sm btn-block" value="pobierz"/>
+                        </form>
+                    </td>
+                    <td>
+                        <form method="post" action="/deleteFile">
+                            <input type="hidden" th:name="filename" th:value="${singleFile.name}"/>
+                            <input type="submit" class="btn border border-dark btn-sm btn-block" value="usuń"/>
+                        </form>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-10 mx-auto text-center">
+            <h4 class="my-2">Twoje foldery:</h4>
+            <table class="w-100 table mx-auto table-hover table-bordered table-sm" id="foldersListTable" border="1">
+                <thead class="thead-light">
+                <tr>
+                    <th class="w-50">Nazwa</th>
+                    <th class="w-25">Przejdź</th>
+                    <th class="w-25">Usuń</th>
+                </tr>
+                </thead>
+                <tr th:each="singleFolder: ${foldersOnTheList}" th:object="${singleFolder}">
+                    <td th:text="${singleFolder}">text</td>
+                    <td>
+                        <form method="post" action="/enterFolder">
+                            <input type="hidden" th:name="foldername" th:value="${singleFolder}"/>
+                            <input type="submit" class="btn border border-dark btn-sm btn-block" value="wejdź"/>
+                        </form>
+                    </td>
+                    <td>
+                        <form method="post" action="/deleteFolder">
+                            <input type="hidden" th:name="foldername" th:value="${singleFolder}"/>
+                            <input type="submit" class="btn border border-dark btn-sm btn-block" value="usuń"/>
+                        </form>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+
+    <div class="row mt-3">
+        <div class="col-md-5 mx-auto text-center">
+            <p th:text="'Ścieżka: ' + ${session.path}"></p>
+        </div>
+        <div class="col-md-6 mx-auto text-center">
+            <form class="form-inline" action="/addFolder">
+                <label for="folderName" class="mx-1"><b>Nazwa :</b></label>
+                <input class="form-control mx-1" th:name="folderName" id="folderName" type="text" />
+                <input type="submit" class="mx-1" value="Dodaj folder">
+            </form>
+        </div>
+    </div>
+    <div class="row mt-3">
+        <div class="col-md-5 mx-auto text-center">
+            <form class="form-inline" action="/goBack">
+                <input type="submit" class="mx-1" value="Wróć">
+            </form>
+        </div>
     </div>
 </div>
 </div>

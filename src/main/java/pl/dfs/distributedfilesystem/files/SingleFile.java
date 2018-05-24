@@ -4,11 +4,13 @@ public class SingleFile {
     private String name;
     private int size;
     private String node;
+    private String path;
 
-    public SingleFile(String name, int size, String node) {
+    public SingleFile(String name, int size, String path,String node) {
         this.name = name;
         this.size = size;
         this.node = node;
+        this.path = path;
     }
 
     public String getName() {
@@ -33,5 +35,13 @@ public class SingleFile {
 
     public void setNode(String node) {
         this.node = node;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
     }
 }

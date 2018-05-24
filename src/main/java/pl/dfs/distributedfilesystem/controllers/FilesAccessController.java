@@ -1,5 +1,7 @@
 package pl.dfs.distributedfilesystem.controllers;
 
+import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.tomcat.util.buf.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -10,12 +12,14 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import pl.dfs.distributedfilesystem.folders.FoldersRepository;
 import pl.dfs.distributedfilesystem.models.DataNodeOnTheList;
 import pl.dfs.distributedfilesystem.nodes.DataNodesRepository;
 import pl.dfs.distributedfilesystem.files.FilesRepository;
 import pl.dfs.distributedfilesystem.files.SingleFile;
 import pl.dfs.distributedfilesystem.models.FileOnFileList;
 
+import javax.servlet.http.HttpSession;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,21 +34,36 @@ public class FilesAccessController {
     @Autowired
     FilesRepository filesRepository;
 
+    @Autowired
+    FoldersRepository foldersRepository;
+
 
     @RequestMapping("/")
-    public String mainPage(Model model) {
+    public String mainPage(Model model, HttpSession session) {
+
+        if(session.isNew()) {
+            session.setAttribute("path","/");
+        }
+
+        try {
+            session.getAttribute("path");
+        }
+        catch (Exception e){
+            session.setAttribute("path","/");
+        }
 
         List<FileOnFileList> filesOnTheList = new ArrayList<>();
 
-        for(SingleFile singleFile: filesRepository.getAllFiles()) {
+        for(SingleFile singleFile: filesRepository.getFilesByPathWhenExists(session.getAttribute("path").toString())) {
             filesOnTheList.add(new FileOnFileList(singleFile.getName(),singleFile.getSize()));
         }
         model.addAttribute("filesOnTheList",filesOnTheList);
+        model.addAttribute("foldersOnTheList",foldersRepository.subfoldersOfFolder(session.getAttribute("path").toString()));
         return "index";
     }
 
     @RequestMapping("/fileUpload")
-    public String fileUpload(@RequestParam("file") MultipartFile file) {
+    public String fileUpload(@RequestParam("file") MultipartFile file,HttpSession session) {
         if (!file.isEmpty()) {
             if(!filesRepository.checkIfExist(file.getOriginalFilename())) {
                 try {
@@ -72,7 +91,7 @@ public class FilesAccessController {
                         String response = dataNodesRepository.get(address).readResponse();
 
                         if (response.equals("success")) {
-                            filesRepository.addFile(new SingleFile(file.getOriginalFilename(), bytes.length, dataNodesRepository.get(address).getAddress()));
+                            filesRepository.addFile(new SingleFile(file.getOriginalFilename(), bytes.length, session.getAttribute("path").toString(),dataNodesRepository.get(address).getAddress()));
                         }
 
                     } catch (Exception ignored) {
@@ -122,11 +141,49 @@ public class FilesAccessController {
         return "redirect:/";
     }
 
+    @RequestMapping("/enterFolder")
+    public String enterFolder(HttpSession session,@RequestParam String foldername) {
+        String currentPath = session.getAttribute("path").toString();
+        currentPath +=  foldername + "/";
+        session.setAttribute("path",currentPath);
+        return "redirect:/";
+    }
+
+    @RequestMapping("/addFolder")
+    public String addFolder(HttpSession session,@RequestParam String folderName) {
+        if(folderName.split(" ").length==1 && folderName.matches("[a-zA-Z0-9]+")) {
+            if(!foldersRepository.subfoldersOfFolder(session.getAttribute("path").toString()).contains(folderName)) {
+                foldersRepository.addFolder(session.getAttribute("path").toString(),folderName);
+            }
+        }
+        return "redirect:/";
+    }
+
+    @RequestMapping("/deleteFolder")
+    public String deleteFolder(HttpSession session,@RequestParam String foldername){
+
+        foldersRepository.removeFolder(session.getAttribute("path").toString(),foldername);
+        filesRepository.removeFilesByPathWhenExists(session.getAttribute("path").toString()+foldername+"/");
+
+        return "redirect:/";
+    }
+
+    @RequestMapping("/goBack")
+    public String goBack(HttpSession session) {
+        String currentPath = session.getAttribute("path").toString();
+        if(!currentPath.equals("/")) {
+            int i = currentPath.length()-2;
+            while(currentPath.charAt(i)!='/')i--;
+            currentPath = currentPath.substring(0,i+1);
+            session.setAttribute("path",currentPath);
+        }
+        return "redirect:/";
+    }
+
     @RequestMapping("/about")
     public String about(Model model){
 
         ArrayList<DataNodeOnTheList> dataNodeOnTheListArrayList = new ArrayList<>();
-        System.out.println(dataNodesRepository.getNumber());
         for(int i = 0; i < dataNodesRepository.getNumber();i++) {
             dataNodeOnTheListArrayList.add(new DataNodeOnTheList(dataNodesRepository.get(i).getAddress(),dataNodesRepository.getStorage(dataNodesRepository.get(i).getAddress())));
         }
