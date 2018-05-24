@@ -5,7 +5,7 @@ public class FileOnFileList {
 
     }
 
-    public FileOnFileList(String name, int size) {
+    public FileOnFileList(String name, String size) {
         this.name = name;
         this.size = size;
     }
@@ -18,14 +18,14 @@ public class FileOnFileList {
         this.name = name;
     }
 
-    public int getSize() {
+    public String getSize() {
         return size;
     }
 
-    public void setSize(int size) {
+    public void setSize(String size) {
         this.size = size;
     }
 
     private String name;
-    private int size;
+    private String size;
 }

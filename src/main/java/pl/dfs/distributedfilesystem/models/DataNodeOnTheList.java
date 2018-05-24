@@ -4,7 +4,7 @@ public class DataNodeOnTheList {
     public DataNodeOnTheList() {
     }
 
-    public DataNodeOnTheList(String address, int storage) {
+    public DataNodeOnTheList(String address, String storage) {
         this.address = address;
         this.storage = storage;
     }
@@ -17,14 +17,14 @@ public class DataNodeOnTheList {
         this.address = address;
     }
 
-    public int getStorage() {
+    public String getStorage() {
         return storage;
     }
 
-    public void setStorage(int storage) {
+    public void setStorage(String storage) {
         this.storage = storage;
     }
 
     private String address;
-    private int storage;
+    private String storage;
 }

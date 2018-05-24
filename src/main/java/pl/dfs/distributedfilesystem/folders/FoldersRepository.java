@@ -39,20 +39,9 @@ public class FoldersRepository {
                 else if(divided.length==2) {
                     foldersMap.put(divided[0],divided[1]);
                 }
-//
-//                try {
-//                    String folders[] = divided[1].split(",");
-//                    for(int i = 0; i < folders.length;i++)
-//                        tmpFolder.addFolder(folders[i]);
-//                }
-//                catch (Exception ignored){
-//
-//                }
-//                folderArrayList.add(tmpFolder);
+
             }
 
-            for(String key : foldersMap.keySet())
-                System.out.println(key + " " + foldersMap.get(key));
         }
         catch (Exception e) {
             e.printStackTrace();

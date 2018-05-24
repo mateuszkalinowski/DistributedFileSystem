@@ -1,7 +1,5 @@
 package pl.dfs.distributedfilesystem.controllers;
 
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.tomcat.util.buf.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -43,20 +41,57 @@ public class FilesAccessController {
 
         if(session.isNew()) {
             session.setAttribute("path","/");
+            session.setAttribute("error","");
         }
 
         try {
             session.getAttribute("path");
+            session.getAttribute("error");
         }
         catch (Exception e){
             session.setAttribute("path","/");
+            session.setAttribute("error","");
         }
 
         List<FileOnFileList> filesOnTheList = new ArrayList<>();
 
         for(SingleFile singleFile: filesRepository.getFilesByPathWhenExists(session.getAttribute("path").toString())) {
-            filesOnTheList.add(new FileOnFileList(singleFile.getName(),singleFile.getSize()));
+            double size = singleFile.getSize();
+            String unit = "B";
+            if(size > 1000 && size <1000000) {
+                size = size / 1000.0;
+                size = Math.round(size * 100.0)/100.0;
+                unit = "KB";
+            }
+            else if(size > 1000000) {
+                size = size / 1000000.0;
+                size = Math.round(size * 100.0)/100.0;
+                unit = "MB";
+            }
+
+            String sizeString = String.valueOf(size);
+            sizeString = sizeString.replaceFirst(".0","");
+
+            filesOnTheList.add(new FileOnFileList(singleFile.getName(),sizeString + " " + unit));
         }
+
+        if(session.getAttribute("error").equals("badFolderName")) {
+            session.setAttribute("error","");
+            model.addAttribute("error","badFolderName");
+        } else if(session.getAttribute("error").equals("fileAlreadyExists")) {
+            session.setAttribute("error","");
+            model.addAttribute("error","fileAlreadyExists");
+        } else if(session.getAttribute("error").equals("zeroNodes")) {
+            session.setAttribute("error","");
+            model.addAttribute("error","zeroNodes");
+        } else if(session.getAttribute("error").equals("noFileToSend")) {
+            session.setAttribute("error","");
+            model.addAttribute("error","noFileToSend");
+        }
+        else {
+            model.addAttribute("error","");
+        }
+
         model.addAttribute("filesOnTheList",filesOnTheList);
         model.addAttribute("foldersOnTheList",foldersRepository.subfoldersOfFolder(session.getAttribute("path").toString()));
         return "index";
@@ -64,44 +99,55 @@ public class FilesAccessController {
 
     @RequestMapping("/fileUpload")
     public String fileUpload(@RequestParam("file") MultipartFile file,HttpSession session) {
-        if (!file.isEmpty()) {
-            if(!filesRepository.checkIfExist(file.getOriginalFilename())) {
-                try {
-                    byte[] bytes = file.getBytes();
-                    String rootPath = System.getProperty("user.home");
-                    File dir = new File(rootPath + File.separator + "dsfNameNode");
-                    if (!dir.exists())
-                        dir.mkdirs();
-                    File serverFile = new File(dir.getAbsolutePath()
-                            + File.separator + file.getOriginalFilename());
-                    BufferedOutputStream stream = new BufferedOutputStream(
-                            new FileOutputStream(serverFile));
-                    stream.write(bytes);
-                    stream.close();
+
+        if(dataNodesRepository.getNumber()!=0) {
+
+            if (!file.isEmpty()) {
+                if (!filesRepository.checkIfExist(file.getOriginalFilename())) {
                     try {
-                        String address = dataNodesRepository.getLeastOccupiedNode();
+                        byte[] bytes = file.getBytes();
+                        String rootPath = System.getProperty("user.home");
+                        File dir = new File(rootPath + File.separator + "dsfNameNode");
+                        if (!dir.exists())
+                            dir.mkdirs();
+                        File serverFile = new File(dir.getAbsolutePath()
+                                + File.separator + file.getOriginalFilename());
+                        BufferedOutputStream stream = new BufferedOutputStream(
+                                new FileOutputStream(serverFile));
+                        stream.write(bytes);
+                        stream.close();
+                        try {
+                            String address = dataNodesRepository.getLeastOccupiedNode();
 
-                        dataNodesRepository.get(address).writeString("save ");
-                        dataNodesRepository.get(address).writeString("\"" + file.getOriginalFilename() + "\" ");
-                        dataNodesRepository.get(address).writeFile(serverFile);
-                        dataNodesRepository.get(address).writeFlush();
+                            dataNodesRepository.get(address).writeString("save ");
+                            dataNodesRepository.get(address).writeString("\"" + file.getOriginalFilename() + "\" ");
+                            dataNodesRepository.get(address).writeFile(serverFile);
+                            dataNodesRepository.get(address).writeFlush();
 
-                        serverFile.delete();
+                            serverFile.delete();
 
-                        String response = dataNodesRepository.get(address).readResponse();
+                            String response = dataNodesRepository.get(address).readResponse();
 
-                        if (response.equals("success")) {
-                            filesRepository.addFile(new SingleFile(file.getOriginalFilename(), bytes.length, session.getAttribute("path").toString(),dataNodesRepository.get(address).getAddress()));
+                            if (response.equals("success")) {
+                                filesRepository.addFile(new SingleFile(file.getOriginalFilename(), bytes.length, session.getAttribute("path").toString(), dataNodesRepository.get(address).getAddress()));
+                            }
+
+                        } catch (Exception ignored) {
+                            serverFile.delete();
                         }
 
                     } catch (Exception ignored) {
                         System.out.println(ignored.getMessage());
                     }
-
-                } catch (Exception ignored) {
-                    System.out.println(ignored.getMessage());
+                } else {
+                    session.setAttribute("error", "fileAlreadyExists");
                 }
+            } else {
+                session.setAttribute("error", "noFileToSend");
             }
+        }
+        else {
+            session.setAttribute("error", "zeroNodes");
         }
         return "redirect:/";
     }
@@ -156,6 +202,9 @@ public class FilesAccessController {
                 foldersRepository.addFolder(session.getAttribute("path").toString(),folderName);
             }
         }
+        else {
+            session.setAttribute("error","badFolderName");
+        }
         return "redirect:/";
     }
 
@@ -185,7 +234,25 @@ public class FilesAccessController {
 
         ArrayList<DataNodeOnTheList> dataNodeOnTheListArrayList = new ArrayList<>();
         for(int i = 0; i < dataNodesRepository.getNumber();i++) {
-            dataNodeOnTheListArrayList.add(new DataNodeOnTheList(dataNodesRepository.get(i).getAddress(),dataNodesRepository.getStorage(dataNodesRepository.get(i).getAddress())));
+
+            double size = dataNodesRepository.getStorage(dataNodesRepository.get(i).getAddress());
+            String unit = "B";
+            if(size > 1000 && size <1000000) {
+                size = size / 1000.0;
+                size = Math.round(size * 100.0)/100.0;
+                unit = "KB";
+            }
+            else if(size > 1000000) {
+                size = size / 1000000.0;
+                size = Math.round(size * 100.0)/100.0;
+                unit = "MB";
+            }
+
+            String sizeString = String.valueOf(size);
+            sizeString = sizeString.replaceFirst(".0","");
+
+
+            dataNodeOnTheListArrayList.add(new DataNodeOnTheList(dataNodesRepository.get(i).getAddress(),sizeString + " " + unit ));
         }
 
         model.addAttribute("dataNodesOnTheList",dataNodeOnTheListArrayList);
