@@ -1,5 +1,6 @@
 package pl.dfs.distributedfilesystem.controllers;
 
+import javafx.util.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -217,22 +218,13 @@ public class FilesAccessController {
                 if (response.equals("success")) {
                     divided.remove(i);
                 }
-            } catch (Exception ignored){}
-        }
-        if(divided.size()==0)
-            filesRepository.deleteFile(filename);
-        else {
-            String finalNodes = "";
-            for(String key : divided)
-                finalNodes+=key+",";
-
-            for(int i = 0; i<filesRepository.getAllFiles().size();i++) {
-                if(filesRepository.getAllFiles().get(i).getName().equals(filename)){
-                    filesRepository.getAllFiles().get(i).setNode(finalNodes);
-                    filesRepository.writeFilesInformationFile();
-                }
+            } catch (Exception e){
+                filesRepository.toDelete.add(new Pair<>(filename,address));
+                filesRepository.rewriteFileToDelete();
             }
         }
+
+        filesRepository.deleteFile(filename);
         return "redirect:/";
     }
 

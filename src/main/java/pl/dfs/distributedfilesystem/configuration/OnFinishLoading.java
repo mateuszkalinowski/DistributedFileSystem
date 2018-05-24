@@ -18,5 +18,7 @@ public class OnFinishLoading
         filesRepository.initializeDataNodesSizes();
 
         filesRepository.checkCohesion();
+
+        filesRepository.tryToDelete();
     }
 }
