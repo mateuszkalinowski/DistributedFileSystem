@@ -74,7 +74,7 @@ public class DataNode {
         byte[] bytes = new byte[100 * 1024 * 1024];
         try {
             int count = bufferedInputStream.read(bytes);
-            String response = new String(bytes).substring(0,count);
+            String response = new String(bytes).substring(0,count-1);
             return response;
         } catch (Exception e) {
 
@@ -82,7 +82,7 @@ public class DataNode {
         return null;
     }
 
-    public byte[] readResponseBytes(){
+    public byte[] readResponseBytes() throws FileNotFoundException{
         byte[] bytes = new byte[100*1024*1024];
         byte[] finalBytes = new byte[100*1024*1024];
         int count;
@@ -99,11 +99,17 @@ public class DataNode {
             byte[] toReturn = new byte[finalCount];
 
             System.arraycopy(bytes,0,toReturn,0,finalCount);
+            if(finalCount<15) {
+                if (new String(toReturn).substring(0, finalCount - 1).equals("fileDoesntExist")) {
+                    throw new FileNotFoundException();
+                }
+            }
 
             return toReturn;
 
-        } catch (Exception e) {
-        }
+        } catch (FileNotFoundException e) {
+            throw new FileNotFoundException();
+        } catch (IOException e1){}
 
         return null;
     }

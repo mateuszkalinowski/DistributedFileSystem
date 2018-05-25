@@ -21,6 +21,7 @@ import pl.dfs.distributedfilesystem.files.SingleFile;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -42,10 +43,7 @@ public class FilesAccessController {
     @RequestMapping("/")
     public String mainPage(Model model, HttpSession session) {
 
-        if(session.isNew()) {
-            session.setAttribute("path","/");
-            session.setAttribute("error","");
-        }
+        checkSession(session);
 
         try {
             session.getAttribute("path");
@@ -131,10 +129,11 @@ public class FilesAccessController {
                 icon = "/fileIcons/file.png";
             objectsOnTheList.add(new ObjectOnTheList(singleFile.getName(),sizeString + " " + unit,String.valueOf(singleFile.getNode().split(",").length),"file",icon));
         }
-
         for(String key : foldersRepository.subfoldersOfFolder(session.getAttribute("path").toString())) {
             objectsOnTheList.add(new ObjectOnTheList(key,"-","-","folder","-"));
         }
+        if(!session.getAttribute("path").equals("/"))
+            objectsOnTheList.add(new ObjectOnTheList("..","-","-","folder","-"));
 
         if(session.getAttribute("error").equals("badFolderName")) {
             session.setAttribute("error","");
@@ -148,6 +147,12 @@ public class FilesAccessController {
         } else if(session.getAttribute("error").equals("noFileToSend")) {
             session.setAttribute("error","");
             model.addAttribute("error","noFileToSend");
+        } else if(session.getAttribute("error").equals("notEnoughSpace")) {
+            session.setAttribute("error","");
+            model.addAttribute("error","notEnoughSpace");
+        } else if(session.getAttribute("error").equals("fileNotExist")) {
+            session.setAttribute("error","");
+            model.addAttribute("error","fileNotExist");
         }
         else {
             model.addAttribute("error","");
@@ -161,15 +166,12 @@ public class FilesAccessController {
 
         model.addAttribute("replicationValues",wartosci);
         model.addAttribute("objectsOnTheList",objectsOnTheList);
-
-        //model.addAttribute("foldersOnTheList",foldersRepository.subfoldersOfFolder(session.getAttribute("path").toString()));
-
         return "index";
     }
 
     @RequestMapping("/fileUpload")
     public String fileUpload(@RequestParam("file") MultipartFile file,HttpSession session,HttpServletRequest request) {
-
+        checkSession(session);
         if(dataNodesRepository.getNumber()!=0) {
 
             if (!file.isEmpty()) {
@@ -203,6 +205,9 @@ public class FilesAccessController {
                             if (finalAddressesLine.length()>0) {
                                 filesRepository.addFile(new SingleFile(file.getOriginalFilename(), bytes.length, session.getAttribute("path").toString(), finalAddressesLine));
                             }
+                            else {
+                                session.setAttribute("error", "notEnoughSpace");
+                            }
                             serverFile.delete();
 
                         } catch (Exception ignored) {
@@ -226,37 +231,65 @@ public class FilesAccessController {
     }
 
     @RequestMapping("/downloadFile")
-    public ResponseEntity<byte[]> downloadFile(@RequestParam String filename) {
+    public ResponseEntity downloadFile(@RequestParam String filename,HttpSession session) {
+        checkSession(session);
         String addresses = filesRepository.getFileNode(filename);
+        System.out.println(filename);
+        byte[] toSend = new byte[100*1024*1024];
+        boolean exists = false;
+        ArrayList<String> addressesArrayList = new ArrayList<>(Arrays.asList(addresses.split(",")));
+        for(int i = addressesArrayList.size()-1; i>=0;i--) {
 
-        String address = "";
+            String address = addressesArrayList.get(i);
 
-        for (String key : addresses.split(",")) {
-            if (dataNodesRepository.get(key) != null) {
-                address = key;
+            dataNodesRepository.get(address).writeString("download ");
+            dataNodesRepository.get(address).writeString("\"" + filename + "\" ");
+            dataNodesRepository.get(address).writeFlush();
+
+            try {
+                toSend = dataNodesRepository.get(address).readResponseBytes();
+                exists=true;
                 break;
+            } catch (FileNotFoundException e) {
+                addressesArrayList.remove(i);
+                continue;
+            } catch (Exception e) {
+                e.printStackTrace();
+                continue;
+            }
+        }
+        StringBuilder newAdresses = new StringBuilder();
+        for(int i = 0 ; i < addressesArrayList.size();i++) {
+            newAdresses.append(addressesArrayList.get(i)).append(",");
+        }
+
+        for(int i = 0; i < filesRepository.getAllFiles().size();i++) {
+            if(filesRepository.getAllFiles().get(i).getName().equals(filename)) {
+                if(!newAdresses.toString().trim().equals("")) {
+                    filesRepository.getAllFiles().get(i).setNode(newAdresses.toString());
+                    filesRepository.writeFilesInformationFile();
+                }
+                else {
+                    filesRepository.deleteFile(filename);
+                }
             }
         }
 
-        if(address.equals("")) {
-            return new ResponseEntity("Nie można było przetworzyc żądania", HttpStatus.INTERNAL_SERVER_ERROR);
+        if(exists) {
+            HttpHeaders responseHeaders = new HttpHeaders();
+            responseHeaders.set("charset", "utf-8");
+            responseHeaders.setContentType(MediaType.valueOf("text/html"));
+            responseHeaders.setContentLength(toSend.length);
+            responseHeaders.set("Content-disposition", "attachment; filename=" + filename);
+            return new ResponseEntity(toSend, responseHeaders, HttpStatus.OK);
         }
+        else {
+            session.setAttribute("error","fileNotExist");
+            return new ResponseEntity("<script>window.location.replace(\"/\");</script>",HttpStatus.INTERNAL_SERVER_ERROR);
 
-        dataNodesRepository.get(address).writeString("download ");
-        dataNodesRepository.get(address).writeString("\"" + filename + "\" ");
-        dataNodesRepository.get(address).writeFlush();
-
-        byte[] toSend = dataNodesRepository.get(address).readResponseBytes();
-
-        HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.set("charset", "utf-8");
-        responseHeaders.setContentType(MediaType.valueOf("text/html"));
-        responseHeaders.setContentLength(toSend.length);
-        responseHeaders.set("Content-disposition", "attachment; filename=" + filename);
-
-        return new ResponseEntity<byte[]>(toSend, responseHeaders, HttpStatus.OK);
-
+        }
     }
+
 
     @RequestMapping("/deleteFile")
     public String fileDelete(@RequestParam String filename) {
@@ -284,14 +317,23 @@ public class FilesAccessController {
 
     @RequestMapping("/enterFolder")
     public String enterFolder(HttpSession session,@RequestParam String foldername) {
+        checkSession(session);
         String currentPath = session.getAttribute("path").toString();
-        currentPath +=  foldername + "/";
-        session.setAttribute("path",currentPath);
+        if(foldername.equals("..")) {
+            int index = currentPath.length()-2;
+            while(currentPath.charAt(index-1)!='/')index--;
+            currentPath = currentPath.substring(0,index);
+        }
+        else {
+            currentPath += foldername + "/";
+        }
+        session.setAttribute("path", currentPath);
         return "redirect:/";
     }
 
     @RequestMapping("/addFolder")
     public String addFolder(HttpSession session,@RequestParam String folderName) {
+        checkSession(session);
         if(folderName.split(" ").length==1 && folderName.matches("[a-zA-Z0-9]+")) {
             if(!foldersRepository.subfoldersOfFolder(session.getAttribute("path").toString()).contains(folderName)) {
                 foldersRepository.addFolder(session.getAttribute("path").toString(),folderName);
@@ -305,6 +347,7 @@ public class FilesAccessController {
 
     @RequestMapping("/deleteFolder")
     public String deleteFolder(HttpSession session,@RequestParam String foldername){
+        checkSession(session);
 
         foldersRepository.removeFolder(session.getAttribute("path").toString(),foldername);
         filesRepository.removeFilesByPathWhenExists(session.getAttribute("path").toString()+foldername+"/");
@@ -314,6 +357,7 @@ public class FilesAccessController {
 
     @RequestMapping("/goBack")
     public String goBack(HttpSession session) {
+        checkSession(session);
         String currentPath = session.getAttribute("path").toString();
         if(!currentPath.equals("/")) {
             int i = currentPath.length()-2;
@@ -324,9 +368,34 @@ public class FilesAccessController {
         return "redirect:/";
     }
 
+    @RequestMapping("/changeFolder")
+    public String changeFolder(@RequestParam String file,@RequestParam String folder,HttpSession session) {
+
+        String path = session.getAttribute("path").toString();
+
+        for(int i = 0; i < filesRepository.getAllFiles().size();i++) {
+            if(filesRepository.getAllFiles().get(i).getName().equals(file)) {
+                if(folder.equals("..")) {
+
+                    String currentPath = filesRepository.getAllFiles().get(i).getPath();
+
+                    int index = currentPath.length()-2;
+                    while(currentPath.charAt(index-1)!='/')index--;
+                    currentPath = currentPath.substring(0,index);
+
+                    filesRepository.getAllFiles().get(i).setPath(currentPath);
+                }
+                else {
+                    filesRepository.getAllFiles().get(i).setPath(path + folder + File.separator);
+                }
+            }
+        }
+        filesRepository.writeFilesInformationFile();
+        return "redirect:/";
+    }
+
     @RequestMapping("/about")
     public String about(Model model){
-
         ArrayList<DataNodeOnTheList> dataNodeOnTheListArrayList = new ArrayList<>();
         for(int i = 0; i < dataNodesRepository.getNumber();i++) {
 
@@ -371,5 +440,12 @@ public class FilesAccessController {
 
 
         return "about";
+    }
+
+    private void checkSession(HttpSession session){
+        if(session.isNew()) {
+            session.setAttribute("path","/");
+            session.setAttribute("error","");
+        }
     }
 }
