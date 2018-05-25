@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
-    <title>Strona główna</title>
+    <title>DFS</title>
     <link rel="stylesheet" type="text/css" href="/bootstrap/css/bootstrap.min.css"/>
     <script src="/js/loginPage.js"></script>
 </head>
@@ -46,7 +46,8 @@
             <table class="w-100 table mx-auto table-hover table-bordered table-sm" id="filesListTable" border="1">
                 <thead class="thead-light">
                 <tr>
-                    <th style="width: 60%;">Nazwa</th>
+                    <th style="width: 10%">Typ</th>
+                    <th style="width: 50%;">Nazwa</th>
                     <th style="width: 10%;">Rozmiar</th>
                     <th style="width: 10%;">Replikacja</th>
                     <th style="width: 10%;">Akcja</th>
@@ -54,6 +55,8 @@
                 </tr>
                 </thead>
                 <tr th:each="singleObject: ${objectsOnTheList}" th:object="${singleObject}">
+                    <td><img th:if="${singleObject.icon}!='-'" th:src="*{icon}" style="width: 20px;height: 20px">
+                    </td>
                     <td th:text="*{name}">text</td>
                     <td th:text="*{size}"></td>
                     <td th:text="*{replication}"></td>

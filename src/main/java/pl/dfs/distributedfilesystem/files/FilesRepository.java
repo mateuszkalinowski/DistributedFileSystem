@@ -115,7 +115,8 @@ public class FilesRepository {
 
     public void initializeDataNodesSizes(){
         for(SingleFile singleFile: fileArrayList) {
-            dataNodesRepository.addOccupiedSpaceToNode(singleFile.getNode(),singleFile.getSize());
+            for(String node : singleFile.getNode().split(","))
+                dataNodesRepository.addOccupiedSpaceToNode(node,singleFile.getSize());
         }
     }
 

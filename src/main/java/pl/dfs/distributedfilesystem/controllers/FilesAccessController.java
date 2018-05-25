@@ -75,11 +75,65 @@ public class FilesAccessController {
             String sizeString = String.valueOf(size);
             sizeString = sizeString.replaceFirst(".0","");
 
-            objectsOnTheList.add(new ObjectOnTheList(singleFile.getName(),sizeString + " " + unit,String.valueOf(singleFile.getNode().split(",").length),"file"));
+            String icon = "-";
+
+            if(singleFile.getName().endsWith(".avi"))
+                icon = "/fileIcons/avi.png";
+            else if(singleFile.getName().endsWith(".css"))
+                icon = "/fileIcons/css.png";
+            else if(singleFile.getName().endsWith(".csv"))
+                icon = "/fileIcons/csv.png";
+            else if(singleFile.getName().endsWith(".dbf"))
+                icon = "/fileIcons/dbf.png";
+            else if(singleFile.getName().endsWith(".doc") || singleFile.getName().endsWith(".docx"))
+                icon = "/fileIcons/doc.png";
+            else if(singleFile.getName().endsWith(".dwg"))
+                icon = "/fileIcons/dwg.png";
+            else  if(singleFile.getName().endsWith(".exe"))
+                icon = "/fileIcons/exe.png";
+            else if(singleFile.getName().endsWith(".fla"))
+                icon = "/fileIcons/fla.png";
+            else if(singleFile.getName().endsWith(".html"))
+                icon = "/fileIcons/html.png";
+            else if(singleFile.getName().endsWith(".iso"))
+                icon = "/fileIcons/iso.png";
+            else if(singleFile.getName().endsWith(".js"))
+                icon = "/fileIcons/javascript.png";
+            else if(singleFile.getName().endsWith(".json"))
+                icon = "/fileIcons/json-file.png";
+            else if(singleFile.getName().endsWith(".jpg"))
+                icon = "/fileIcons/jpg.png";
+            else if(singleFile.getName().endsWith(".mp3"))
+                icon = "/fileIcons/mp3.png";
+            else if(singleFile.getName().endsWith(".mp4"))
+                icon = "/fileIcons/mp4.png";
+            else if(singleFile.getName().endsWith(".pdf"))
+                icon = "/fileIcons/pdf.png";
+            else if(singleFile.getName().endsWith(".psd"))
+                icon = "/fileIcons/psd.png";
+            else if(singleFile.getName().endsWith(".png"))
+                icon = "/fileIcons/png.png";
+            else if(singleFile.getName().endsWith(".ppt") || singleFile.getName().endsWith(".pptx"))
+                icon = "/fileIcons/ppt.png";
+            else if(singleFile.getName().endsWith(".rft"))
+                icon = "/fileIcons/rft.png";
+            else if(singleFile.getName().endsWith(".svg"))
+                icon = "/fileIcons/svg.png";
+            else if(singleFile.getName().endsWith(".txt"))
+                icon = "/fileIcons/txt.png";
+            else if(singleFile.getName().endsWith(".xls") || singleFile.getName().endsWith(".xlsx"))
+                icon = "/fileIcons/xls.png";
+            else if(singleFile.getName().endsWith(".xml"))
+                icon = "/fileIcons/xml.png";
+            else if(singleFile.getName().endsWith(".zip"))
+                icon = "/fileIcons/zip.png";
+            else
+                icon = "/fileIcons/file.png";
+            objectsOnTheList.add(new ObjectOnTheList(singleFile.getName(),sizeString + " " + unit,String.valueOf(singleFile.getNode().split(",").length),"file",icon));
         }
 
         for(String key : foldersRepository.subfoldersOfFolder(session.getAttribute("path").toString())) {
-            objectsOnTheList.add(new ObjectOnTheList(key,"-","-","folder"));
+            objectsOnTheList.add(new ObjectOnTheList(key,"-","-","folder","-"));
         }
 
         if(session.getAttribute("error").equals("badFolderName")) {
@@ -278,7 +332,7 @@ public class FilesAccessController {
 
             double size = dataNodesRepository.getStorage(dataNodesRepository.get(i).getAddress());
             String unit = "B";
-            if(size > 1000 && size <1000000) {
+            if(size > 1000 && size < 1000000) {
                 size = size / 1000.0;
                 size = Math.round(size * 100.0)/100.0;
                 unit = "KB";
@@ -290,7 +344,6 @@ public class FilesAccessController {
             }
 
             String sizeString = String.valueOf(size);
-            sizeString = sizeString.replaceFirst(".0","");
 
                 dataNodesRepository.get(dataNodesRepository.get(i).getAddress()).writeString("freespace ");
                 dataNodesRepository.get(dataNodesRepository.get(i).getAddress()).writeFlush();

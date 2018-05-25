@@ -5,6 +5,7 @@ public class ObjectOnTheList {
     private String size;
     private String replication;
     private String type;
+    private String icon;
 
     public ObjectOnTheList() {
     }
@@ -41,10 +42,19 @@ public class ObjectOnTheList {
         this.replication = replication;
     }
 
-    public ObjectOnTheList(String name, String size, String replication, String type) {
+    public String getIcon() {
+        return icon;
+    }
+
+    public void setIcon(String icon) {
+        this.icon = icon;
+    }
+
+    public ObjectOnTheList(String name, String size, String replication, String type, String icon) {
         this.name = name;
         this.size = size;
         this.type = type;
         this.replication = replication;
+        this.icon = icon;
     }
 }
