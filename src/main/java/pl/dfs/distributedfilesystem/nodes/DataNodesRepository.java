@@ -78,30 +78,6 @@ public class DataNodesRepository {
 
     private ArrayList<DataNode> dataNodeArrayList;
 
-    public void printOccupiedSpace(){
-        for(String s : occupiedSpaceOnNodes.keySet())
-            System.out.println(s + " " + occupiedSpaceOnNodes.get(s));
-    }
-
-    public String getLeastOccupiedNode(){
-        String address = null;
-        int value = -1;
-
-        for(String key : occupiedSpaceOnNodes.keySet()) {
-            if(value==-1) {
-                address = key;
-                value = occupiedSpaceOnNodes.get(key);
-            }
-            else {
-                if(occupiedSpaceOnNodes.get(key)<value) {
-                    value = occupiedSpaceOnNodes.get(key);
-                    address = key;
-                }
-            }
-        }
-        return address;
-    }
-
     public int getStorage(String address) {
         return occupiedSpaceOnNodes.get(address);
     }
