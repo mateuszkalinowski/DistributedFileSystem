@@ -130,10 +130,10 @@ public class FilesAccessController {
             objectsOnTheList.add(new ObjectOnTheList(singleFile.getName(),sizeString + " " + unit,String.valueOf(singleFile.getNode().split(",").length),"file",icon));
         }
         for(String key : foldersRepository.subfoldersOfFolder(session.getAttribute("path").toString())) {
-            objectsOnTheList.add(new ObjectOnTheList(key,"-","-","folder","-"));
+            objectsOnTheList.add(new ObjectOnTheList(key,"-","-","folder","/fileIcons/folder.png"));
         }
         if(!session.getAttribute("path").equals("/"))
-            objectsOnTheList.add(new ObjectOnTheList("..","-","-","folder","-"));
+            objectsOnTheList.add(new ObjectOnTheList("..","-","-","folder","/fileIcons/backfolder.png"));
 
         if(session.getAttribute("error").equals("badFolderName")) {
             session.setAttribute("error","");
