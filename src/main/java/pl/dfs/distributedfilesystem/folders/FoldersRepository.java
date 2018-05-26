@@ -101,6 +101,39 @@ public class FoldersRepository {
         rewriteFolders();
     }
 
+    public void renameFolder(String path,String oldName,String newName) {
+        ArrayList<String> folders = new ArrayList<>(Arrays.asList(foldersMap.get(path).split(",")));
+        folders.remove(oldName);
+        folders.add(newName);
+        String folderList = "";
+        for(String oneFolder : folders)
+            folderList +=oneFolder+",";
+        foldersMap.put(path,folderList);
+
+        Set<String> keys = foldersMap.keySet();
+        Set<String> toRemove = new HashSet<>();
+        Map<String,String> toChange = new HashMap<>();
+
+        for(String key : keys) {
+            if(key.startsWith(path + oldName + "/")) {
+                toChange.put(path + newName + "/",foldersMap.get(key));
+                toRemove.add(key);
+            }
+        }
+
+        for(String key : toRemove)
+            foldersMap.remove(key);
+
+        for(String key : toChange.keySet()) {
+            foldersMap.put(key,toChange.get(key));
+        }
+
+
+
+
+        rewriteFolders();
+    }
+
     public ArrayList<String> subfoldersOfFolder(String path) {
         if(foldersMap.get(path).equals(""))
             return new ArrayList<>();

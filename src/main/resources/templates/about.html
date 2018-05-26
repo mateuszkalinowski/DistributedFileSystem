@@ -1,36 +1,41 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8"/>
     <title>DFS - About</title>
     <link rel="stylesheet" type="text/css" href="/bootstrap/css/bootstrap.min.css"/>
     <script src="/js/loginPage.js"></script>
 </head>
 <body class="bg-light">
 <div class="container">
-<nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-primary"
-     th:include="navigationBar :: navigationBar"/>
-<div class="row mt-3">
-    <div class="col-md-8 mx-auto text-center">
-        <h4 class="my-2">Podłączone węzły danych:</h4>
+    <nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-primary"
+         th:include="navigationBar :: navigationBar"/>
+    <div class="row mt-3">
+        <div class="col-md-8 mx-auto text-center">
+            <h4 class="my-2">Podłączone węzły danych:</h4>
 
-        <table class="w-100 table mx-auto table-hover table-bordered table-sm" id="filesListTable" border="1">
-            <thead class="thead-light">
-            <tr>
-                <th style="width: 70%">Adres</th>
-                <th style="width: 15%">Zajęte miejsce</th>
-                <th style="width: 15%">Wolne miejsce</th>
-            </tr>
-            </thead>
-            <tr th:each="dataNode: ${dataNodesOnTheList}" th:object="${dataNode}">
-                <td th:text="*{address}">text</td>
-                <td th:text="*{storage}"></td>
-                <td th:text="*{freeStorage}"></td>
-            </tr>
-        </table>
+            <table class="w-100 table mx-auto table-hover table-bordered table-sm" id="filesListTable" border="1">
+                <thead class="thead-light">
+                <tr>
+                    <th></th>
+                    <th style="width: 70%">Adres</th>
+                    <th style="width: 15%">Zajęte miejsce</th>
+                    <th style="width: 15%">Wolne miejsce</th>
+                </tr>
+                </thead>
+                <tr th:each="dataNode: ${dataNodesOnTheList}" th:object="${dataNode}">
+                    <td><img src="/fileIcons/node.png" style="width: 20px;height: 20px"></td>
+                    <td th:text="*{address}">text</td>
+                    <td th:text="*{storage}"></td>
+                    <td th:text="*{freeStorage}"></td>
+                </tr>
+            </table>
 
+        </div>
     </div>
-</div>
+    <div class="fixed-bottom text-center">
+        Icons made by <a href="https://www.flaticon.com/authors/smashicons" title="smashicons">smashicons</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> are licensed by <a href="http://creativecommons.org/licenses/by/3.0/"     title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a>
+    </div>
 </div>
 </body>
 </html>

@@ -21,11 +21,9 @@ import pl.dfs.distributedfilesystem.files.SingleFile;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.*;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 
 @Controller
 public class FilesAccessController {
@@ -75,65 +73,71 @@ public class FilesAccessController {
 
             String icon = "-";
 
-            if(singleFile.getName().endsWith(".avi"))
+            String filename = singleFile.getName().split("/")[singleFile.getName().split("/").length-1];
+
+            if(filename.endsWith(".avi"))
                 icon = "/fileIcons/avi.png";
-            else if(singleFile.getName().endsWith(".css"))
+            else if(filename.endsWith(".css"))
                 icon = "/fileIcons/css.png";
-            else if(singleFile.getName().endsWith(".csv"))
+            else if(filename.endsWith(".csv"))
                 icon = "/fileIcons/csv.png";
-            else if(singleFile.getName().endsWith(".dbf"))
+            else if(filename.endsWith(".dbf"))
                 icon = "/fileIcons/dbf.png";
-            else if(singleFile.getName().endsWith(".doc") || singleFile.getName().endsWith(".docx"))
+            else if(filename.endsWith(".doc") || filename.endsWith(".docx"))
                 icon = "/fileIcons/doc.png";
-            else if(singleFile.getName().endsWith(".dwg"))
+            else if(filename.endsWith(".dwg"))
                 icon = "/fileIcons/dwg.png";
-            else  if(singleFile.getName().endsWith(".exe"))
+            else  if(filename.endsWith(".exe"))
                 icon = "/fileIcons/exe.png";
-            else if(singleFile.getName().endsWith(".fla"))
+            else if(filename.endsWith(".fla"))
                 icon = "/fileIcons/fla.png";
-            else if(singleFile.getName().endsWith(".html"))
+            else if(filename.endsWith(".html"))
                 icon = "/fileIcons/html.png";
-            else if(singleFile.getName().endsWith(".iso"))
+            else if(filename.endsWith(".iso"))
                 icon = "/fileIcons/iso.png";
-            else if(singleFile.getName().endsWith(".js"))
+            else if(filename.endsWith(".js"))
                 icon = "/fileIcons/javascript.png";
-            else if(singleFile.getName().endsWith(".json"))
+            else if(filename.endsWith(".json"))
                 icon = "/fileIcons/json-file.png";
-            else if(singleFile.getName().endsWith(".jpg"))
+            else if(filename.endsWith(".jpg"))
                 icon = "/fileIcons/jpg.png";
-            else if(singleFile.getName().endsWith(".mp3"))
+            else if(filename.endsWith(".mp3"))
                 icon = "/fileIcons/mp3.png";
-            else if(singleFile.getName().endsWith(".mp4"))
+            else if(filename.endsWith(".mp4"))
                 icon = "/fileIcons/mp4.png";
-            else if(singleFile.getName().endsWith(".pdf"))
+            else if(filename.endsWith(".pdf"))
                 icon = "/fileIcons/pdf.png";
-            else if(singleFile.getName().endsWith(".psd"))
+            else if(filename.endsWith(".psd"))
                 icon = "/fileIcons/psd.png";
-            else if(singleFile.getName().endsWith(".png"))
+            else if(filename.endsWith(".png"))
                 icon = "/fileIcons/png.png";
-            else if(singleFile.getName().endsWith(".ppt") || singleFile.getName().endsWith(".pptx"))
+            else if(filename.endsWith(".ppt") || filename.endsWith(".pptx"))
                 icon = "/fileIcons/ppt.png";
-            else if(singleFile.getName().endsWith(".rft"))
+            else if(filename.endsWith(".rft"))
                 icon = "/fileIcons/rft.png";
-            else if(singleFile.getName().endsWith(".svg"))
+            else if(filename.endsWith(".svg"))
                 icon = "/fileIcons/svg.png";
-            else if(singleFile.getName().endsWith(".txt"))
+            else if(filename.endsWith(".txt"))
                 icon = "/fileIcons/txt.png";
-            else if(singleFile.getName().endsWith(".xls") || singleFile.getName().endsWith(".xlsx"))
+            else if(filename.endsWith(".xls") || filename.endsWith(".xlsx"))
                 icon = "/fileIcons/xls.png";
-            else if(singleFile.getName().endsWith(".xml"))
+            else if(filename.endsWith(".xml"))
                 icon = "/fileIcons/xml.png";
-            else if(singleFile.getName().endsWith(".zip"))
+            else if(filename.endsWith(".zip"))
                 icon = "/fileIcons/zip.png";
             else
                 icon = "/fileIcons/file.png";
-            objectsOnTheList.add(new ObjectOnTheList(singleFile.getName(),sizeString + " " + unit,String.valueOf(singleFile.getNode().split(",").length),"file",icon));
+            objectsOnTheList.add(new ObjectOnTheList(filename,sizeString + " " + unit,String.valueOf(singleFile.getNode().split(",").length),"file",icon));
         }
         for(String key : foldersRepository.subfoldersOfFolder(session.getAttribute("path").toString())) {
             objectsOnTheList.add(new ObjectOnTheList(key,"-","-","folder","/fileIcons/folder.png"));
         }
         if(!session.getAttribute("path").equals("/"))
             objectsOnTheList.add(new ObjectOnTheList("..","-","-","folder","/fileIcons/backfolder.png"));
+
+//        if(dataNodesRepository.getNumber()==0) {
+//            session.setAttribute("error","zeroNodes");
+//        }
 
         if(session.getAttribute("error").equals("badFolderName")) {
             session.setAttribute("error","");
@@ -153,6 +157,12 @@ public class FilesAccessController {
         } else if(session.getAttribute("error").equals("fileNotExist")) {
             session.setAttribute("error","");
             model.addAttribute("error","fileNotExist");
+        } else if(session.getAttribute("error").equals("folderNameAlreadyExists")) {
+            session.setAttribute("error","");
+            model.addAttribute("error","folderNameAlreadyExists");
+        } else if(session.getAttribute("error").equals("fileNameAlreadyExists")) {
+            session.setAttribute("error","");
+            model.addAttribute("error","fileNameAlreadyExists");
         }
         else {
             model.addAttribute("error","");
@@ -175,9 +185,8 @@ public class FilesAccessController {
         if(dataNodesRepository.getNumber()!=0) {
 
             if (!file.isEmpty()) {
-                if (!filesRepository.checkIfExist(file.getOriginalFilename())) {
+                if (!filesRepository.checkIfExist(session.getAttribute("path") + file.getOriginalFilename() + "/")) {
                     try {
-                      // System.out.println(request.getParameter("replication"));
                         byte[] bytes = file.getBytes();
                         String rootPath = System.getProperty("user.home");
                         File dir = new File(rootPath + File.separator + "dsfNameNode");
@@ -194,7 +203,7 @@ public class FilesAccessController {
                             String finalAddressesLine = "";
                             for (String address : addresses) {
                                 dataNodesRepository.get(address).writeString("save ");
-                                dataNodesRepository.get(address).writeString("\"" + file.getOriginalFilename() + "\" ");
+                                dataNodesRepository.get(address).writeString("\"" + session.getAttribute("path") + file.getOriginalFilename() + "/" + "\" ");
                                 dataNodesRepository.get(address).writeFile(serverFile);
                                 dataNodesRepository.get(address).writeFlush();
                                 String response = dataNodesRepository.get(address).readResponse();
@@ -203,7 +212,7 @@ public class FilesAccessController {
                                 }
                         }
                             if (finalAddressesLine.length()>0) {
-                                filesRepository.addFile(new SingleFile(file.getOriginalFilename(), bytes.length, session.getAttribute("path").toString(), finalAddressesLine));
+                                filesRepository.addFile(new SingleFile(session.getAttribute("path") + file.getOriginalFilename() + "/", bytes.length, session.getAttribute("path").toString(), finalAddressesLine));
                             }
                             else {
                                 session.setAttribute("error", "notEnoughSpace");
@@ -233,8 +242,7 @@ public class FilesAccessController {
     @RequestMapping("/downloadFile")
     public ResponseEntity downloadFile(@RequestParam String filename,HttpSession session) {
         checkSession(session);
-        String addresses = filesRepository.getFileNode(filename);
-        System.out.println(filename);
+        String addresses = filesRepository.getFileNode(session.getAttribute("path") +  filename + "/");
         byte[] toSend = new byte[100*1024*1024];
         boolean exists = false;
         ArrayList<String> addressesArrayList = new ArrayList<>(Arrays.asList(addresses.split(",")));
@@ -243,7 +251,7 @@ public class FilesAccessController {
             String address = addressesArrayList.get(i);
 
             dataNodesRepository.get(address).writeString("download ");
-            dataNodesRepository.get(address).writeString("\"" + filename + "\" ");
+            dataNodesRepository.get(address).writeString("\"" + session.getAttribute("path") + filename  + "/" + "\" ");
             dataNodesRepository.get(address).writeFlush();
 
             try {
@@ -286,20 +294,19 @@ public class FilesAccessController {
         else {
             session.setAttribute("error","fileNotExist");
             return new ResponseEntity("<script>window.location.replace(\"/\");</script>",HttpStatus.INTERNAL_SERVER_ERROR);
-
         }
     }
 
 
     @RequestMapping("/deleteFile")
-    public String fileDelete(@RequestParam String filename) {
-        String addresses = filesRepository.getFileNode(filename);
+    public String fileDelete(@RequestParam String filename,HttpSession session) {
+        String addresses = filesRepository.getFileNode(session.getAttribute("path") + filename + "/");
         ArrayList<String> divided = new ArrayList<>(Arrays.asList(addresses.split(",")));
         for(int i = divided.size()-1;i>=0;i--) {
             String address = divided.get(i);
             try {
                 dataNodesRepository.get(address).writeString("delete ");
-                dataNodesRepository.get(address).writeString("\"" + filename + "\" ");
+                dataNodesRepository.get(address).writeString("\"" +session.getAttribute("path") +   filename + "/" + "\" ");
                 dataNodesRepository.get(address).writeFlush();
                 String response = dataNodesRepository.get(address).readResponse();
                 if (response.equals("success")) {
@@ -311,7 +318,7 @@ public class FilesAccessController {
             }
         }
 
-        filesRepository.deleteFile(filename);
+        filesRepository.deleteFile(session.getAttribute("path") + filename + "/");
         return "redirect:/";
     }
 
@@ -355,19 +362,6 @@ public class FilesAccessController {
         return "redirect:/";
     }
 
-    @RequestMapping("/goBack")
-    public String goBack(HttpSession session) {
-        checkSession(session);
-        String currentPath = session.getAttribute("path").toString();
-        if(!currentPath.equals("/")) {
-            int i = currentPath.length()-2;
-            while(currentPath.charAt(i)!='/')i--;
-            currentPath = currentPath.substring(0,i+1);
-            session.setAttribute("path",currentPath);
-        }
-        return "redirect:/";
-    }
-
     @RequestMapping("/changeFolder")
     public String changeFolder(@RequestParam String file,@RequestParam String folder,HttpSession session) {
 
@@ -391,6 +385,78 @@ public class FilesAccessController {
             }
         }
         filesRepository.writeFilesInformationFile();
+        return "redirect:/";
+    }
+
+
+
+    @RequestMapping("changeFolderName")
+    public String changeFolderName(Model model, HttpSession session,@RequestParam String oldFolderName,@RequestParam String newFolderName) {
+//
+//        ArrayList<String> subfoldersWithoutSelectedOne = foldersRepository.subfoldersOfFolder(session.getAttribute("path").toString());
+//        subfoldersWithoutSelectedOne.remove(oldFolderName);
+//        if(subfoldersWithoutSelectedOne.contains(newFolderName)) {
+//            session.setAttribute("error","folderNameAlreadyExists");
+//            return "redirect:/";
+//        }
+//        else {
+//            String path = session.getAttribute("path").toString();
+//
+//            foldersRepository.renameFolder(path,oldFolderName,newFolderName);
+//
+//            for(int i = 0; i < filesRepository.getAllFiles().size();i++) {
+//                if(filesRepository.getAllFiles().get(i).getPath().startsWith(path + oldFolderName + "/")) {
+//                    filesRepository.getAllFiles().get(i).setPath(filesRepository.getAllFiles().get(i).getPath().replaceFirst(path + oldFolderName + "/",path + newFolderName + "/"));
+//                }
+//            }
+//
+//            filesRepository.writeFilesInformationFile();
+            return "redirect:/";
+        //}
+    }
+
+    @RequestMapping("changeFileName")
+    public String changeFileName(Model model, HttpSession session,@RequestParam String oldFileName,@RequestParam String newFileName) {
+
+        int exists = 0;
+        for(int i = 0; i < filesRepository.getAllFiles().size();i++) {
+            if(filesRepository.getAllFiles().get(i).getName().equals(session.getAttribute("path") + newFileName + "/"))
+                exists++;
+        }
+
+        if((exists==0 && !oldFileName.equals(newFileName))|| ((exists==1) && oldFileName.equals(newFileName))) {
+            for(int i = 0; i < filesRepository.getAllFiles().size();i++) {
+                if(filesRepository.getAllFiles().get(i).getName().equals(session.getAttribute("path") + oldFileName + "/")) {
+                    filesRepository.getAllFiles().get(i).setName(session.getAttribute("path") + newFileName + "/");
+
+                    String addresses = filesRepository.getFileNode(session.getAttribute("path") + newFileName + "/");
+                    ArrayList<String> divided = new ArrayList<>(Arrays.asList(addresses.split(",")));
+                    for(int j = divided.size()-1;j>=0;j--) {
+                        String address = divided.get(j);
+                        try {
+                            dataNodesRepository.get(address).writeString("rename ");
+                            dataNodesRepository.get(address).writeString("\"" +session.getAttribute("path") +   oldFileName + "/" + "\" ");
+                            dataNodesRepository.get(address).writeString("\"" +session.getAttribute("path") +   newFileName + "/" + "\" ");
+                            dataNodesRepository.get(address).writeFlush();
+                            String response = dataNodesRepository.get(address).readResponse();
+                            if (response.equals("success")) {
+                                divided.remove(i);
+                            }
+                        } catch (Exception e){
+                           // filesRepository.toDelete.add(new Pair<>(filename,address));
+                           // filesRepository.rewriteFileToDelete();
+                        }
+                    }
+
+                }
+            }
+            filesRepository.writeFilesInformationFile();
+        }
+
+        else {
+            session.setAttribute("error","fileNameAlreadyExists");
+        }
+
         return "redirect:/";
     }
 
