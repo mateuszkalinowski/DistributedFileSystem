@@ -14,6 +14,8 @@ import org.springframework.web.multipart.MultipartFile;
 import pl.dfs.distributedfilesystem.folders.FoldersRepository;
 import pl.dfs.distributedfilesystem.models.DataNodeOnTheList;
 import pl.dfs.distributedfilesystem.models.ObjectOnTheList;
+import pl.dfs.distributedfilesystem.models.ToChange;
+import pl.dfs.distributedfilesystem.models.ToChangeRepository;
 import pl.dfs.distributedfilesystem.nodes.DataNodesRepository;
 import pl.dfs.distributedfilesystem.files.FilesRepository;
 import pl.dfs.distributedfilesystem.files.SingleFile;
@@ -36,6 +38,9 @@ public class FilesAccessController {
 
     @Autowired
     FoldersRepository foldersRepository;
+
+    @Autowired
+    ToChangeRepository toChangeRepository;
 
 
     @RequestMapping("/")
@@ -183,7 +188,6 @@ public class FilesAccessController {
     public String fileUpload(@RequestParam("file") MultipartFile file,HttpSession session,HttpServletRequest request) {
         checkSession(session);
         if(dataNodesRepository.getNumber()!=0) {
-
             if (!file.isEmpty()) {
                 if (!filesRepository.checkIfExist(session.getAttribute("path") + file.getOriginalFilename() + "/")) {
                     try {
@@ -392,27 +396,40 @@ public class FilesAccessController {
 
     @RequestMapping("changeFolderName")
     public String changeFolderName(Model model, HttpSession session,@RequestParam String oldFolderName,@RequestParam String newFolderName) {
-//
-//        ArrayList<String> subfoldersWithoutSelectedOne = foldersRepository.subfoldersOfFolder(session.getAttribute("path").toString());
-//        subfoldersWithoutSelectedOne.remove(oldFolderName);
-//        if(subfoldersWithoutSelectedOne.contains(newFolderName)) {
-//            session.setAttribute("error","folderNameAlreadyExists");
-//            return "redirect:/";
-//        }
-//        else {
-//            String path = session.getAttribute("path").toString();
-//
-//            foldersRepository.renameFolder(path,oldFolderName,newFolderName);
-//
-//            for(int i = 0; i < filesRepository.getAllFiles().size();i++) {
-//                if(filesRepository.getAllFiles().get(i).getPath().startsWith(path + oldFolderName + "/")) {
-//                    filesRepository.getAllFiles().get(i).setPath(filesRepository.getAllFiles().get(i).getPath().replaceFirst(path + oldFolderName + "/",path + newFolderName + "/"));
-//                }
-//            }
-//
-//            filesRepository.writeFilesInformationFile();
+
+        ArrayList<String> subfoldersWithoutSelectedOne = foldersRepository.subfoldersOfFolder(session.getAttribute("path").toString());
+        subfoldersWithoutSelectedOne.remove(oldFolderName);
+        if(subfoldersWithoutSelectedOne.contains(newFolderName)) {
+            session.setAttribute("error","folderNameAlreadyExists");
             return "redirect:/";
-        //}
+        }
+        else {
+            String path = session.getAttribute("path").toString();
+
+            foldersRepository.renameFolder(path,oldFolderName,newFolderName);
+
+            for(int i = 0; i < filesRepository.getAllFiles().size();i++) {
+                if(filesRepository.getAllFiles().get(i).getPath().startsWith(path + oldFolderName + "/")) {
+                    filesRepository.getAllFiles().get(i).setPath(filesRepository.getAllFiles().get(i).getPath().replaceFirst(path + oldFolderName + "/",path + newFolderName + "/"));
+                }
+            }
+
+            for(int i = 0; i < dataNodesRepository.getNumber();i++) {
+                String address = "";
+                try {
+                    address = dataNodesRepository.get(i).getAddress();
+                    dataNodesRepository.get(address).writeString("renameFolder ");
+                    dataNodesRepository.get(address).writeString("\"" + session.getAttribute("path") + oldFolderName + "/" + "\" ");
+                    dataNodesRepository.get(address).writeString("\"" + session.getAttribute("path") + newFolderName + "/" + "\" ");
+                    dataNodesRepository.get(address).writeFlush();
+                    String response = dataNodesRepository.get(address).readResponse();
+                } catch (Exception e) {
+                    toChangeRepository.add(new ToChange(address,"renameFolder ","\"" + session.getAttribute("path") + oldFolderName + "/" + "\" ","\"" + session.getAttribute("path") + newFolderName + "/" + "\" "));
+                }
+            }
+            filesRepository.writeFilesInformationFile();
+            return "redirect:/";
+        }
     }
 
     @RequestMapping("changeFileName")
@@ -434,7 +451,7 @@ public class FilesAccessController {
                     for(int j = divided.size()-1;j>=0;j--) {
                         String address = divided.get(j);
                         try {
-                            dataNodesRepository.get(address).writeString("rename ");
+                            dataNodesRepository.get(address).writeString("renameFile ");
                             dataNodesRepository.get(address).writeString("\"" +session.getAttribute("path") +   oldFileName + "/" + "\" ");
                             dataNodesRepository.get(address).writeString("\"" +session.getAttribute("path") +   newFileName + "/" + "\" ");
                             dataNodesRepository.get(address).writeFlush();
@@ -443,8 +460,8 @@ public class FilesAccessController {
                                 divided.remove(i);
                             }
                         } catch (Exception e){
-                           // filesRepository.toDelete.add(new Pair<>(filename,address));
-                           // filesRepository.rewriteFileToDelete();
+                            //TODO Spójność zmiany nazwy między węzłami
+                           toChangeRepository.add(new ToChange(address,"renameFile ","\"" +session.getAttribute("path") +   oldFileName + "/" + "\" ","\"" +session.getAttribute("path") +   newFileName + "/" + "\" "));
                         }
                     }
 
