@@ -240,7 +240,6 @@ public class FilesRepository {
 
     }
 
-
     private ArrayList<SingleFile> fileArrayList;
 
     String rootPath = System.getProperty("user.home") + File.separator + "dsfNameNode";
