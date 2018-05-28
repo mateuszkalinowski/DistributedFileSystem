@@ -51,10 +51,12 @@ public class FilesAccessController {
         try {
             session.getAttribute("path");
             session.getAttribute("error");
+            session.getAttribute("pathToMove");
         }
         catch (Exception e){
             session.setAttribute("path","/");
             session.setAttribute("error","");
+            session.setAttribute("pathToMove","");
         }
 
         List<ObjectOnTheList> objectsOnTheList = new ArrayList<>();
@@ -168,6 +170,9 @@ public class FilesAccessController {
         } else if(session.getAttribute("error").equals("fileNameAlreadyExists")) {
             session.setAttribute("error","");
             model.addAttribute("error","fileNameAlreadyExists");
+        } else if(session.getAttribute("error").equals("moveFileFromCutNameAlreadyExists")) {
+            session.setAttribute("error","");
+            model.addAttribute("error","moveFileFromCutNameAlreadyExists");
         }
         else {
             model.addAttribute("error","");
@@ -396,7 +401,8 @@ public class FilesAccessController {
 
     @RequestMapping("changeFolderName")
     public String changeFolderName(Model model, HttpSession session,@RequestParam String oldFolderName,@RequestParam String newFolderName) {
-
+        if(oldFolderName.equals(newFolderName))
+            return "redirect:/";
         ArrayList<String> subfoldersWithoutSelectedOne = foldersRepository.subfoldersOfFolder(session.getAttribute("path").toString());
         subfoldersWithoutSelectedOne.remove(oldFolderName);
         if(subfoldersWithoutSelectedOne.contains(newFolderName)) {
@@ -434,7 +440,8 @@ public class FilesAccessController {
 
     @RequestMapping("changeFileName")
     public String changeFileName(Model model, HttpSession session,@RequestParam String oldFileName,@RequestParam String newFileName) {
-
+        if(oldFileName.equals(newFileName))
+            return "redirect:/";
         int exists = 0;
         for(int i = 0; i < filesRepository.getAllFiles().size();i++) {
             if(filesRepository.getAllFiles().get(i).getName().equals(session.getAttribute("path") + newFileName + "/"))
@@ -460,7 +467,6 @@ public class FilesAccessController {
                                 divided.remove(i);
                             }
                         } catch (Exception e){
-                            //TODO Spójność zmiany nazwy między węzłami
                            toChangeRepository.add(new ToChange(address,"renameFile ","\"" +session.getAttribute("path") +   oldFileName + "/" + "\" ","\"" +session.getAttribute("path") +   newFileName + "/" + "\" "));
                         }
                     }
@@ -473,6 +479,63 @@ public class FilesAccessController {
         else {
             session.setAttribute("error","fileNameAlreadyExists");
         }
+
+        return "redirect:/";
+    }
+
+    @RequestMapping("/savePathToMove")
+    public String savePathToMove(HttpSession session,Model model,@RequestParam String filename) {
+        session.setAttribute("pathToMove",session.getAttribute("path") + filename + "/");
+        return "redirect:/";
+    }
+
+    @RequestMapping("/moveFile")
+    public String moveFIle(HttpSession session) {
+        String path = session.getAttribute("path").toString();
+        String pathToMove = session.getAttribute("pathToMove").toString();
+        String filenameToMove = session.getAttribute("pathToMove").toString().split("/")[session.getAttribute("pathToMove").toString().split("/").length-1];
+
+        boolean exists = false;
+        for(int i = 0; i < filesRepository.getAllFiles().size();i++) {
+            if(filesRepository.getAllFiles().get(i).getName().equals(path + filenameToMove+"/")) {
+                exists = true;
+                break;
+            }
+        }
+
+        if(exists) {
+            session.setAttribute("error","moveFileFromCutNameAlreadyExists");
+        }
+        else {
+           for(int i = 0; i < filesRepository.getAllFiles().size();i++) {
+               if(filesRepository.getAllFiles().get(i).getName().equals(pathToMove)) {
+                   filesRepository.getAllFiles().get(i).setName(path + filenameToMove + "/");
+                   filesRepository.getAllFiles().get(i).setPath(path);
+
+                   String addresses = filesRepository.getFileNode(session.getAttribute("path") + filenameToMove + "/");
+                   ArrayList<String> divided = new ArrayList<>(Arrays.asList(addresses.split(",")));
+                   for(int j = divided.size()-1;j>=0;j--) {
+                       String address = divided.get(j);
+                       try {
+                           dataNodesRepository.get(address).writeString("renameFile ");
+                           dataNodesRepository.get(address).writeString("\"" + pathToMove+ "\" ");
+                           dataNodesRepository.get(address).writeString("\"" + path + filenameToMove + "\" ");
+                           dataNodesRepository.get(address).writeFlush();
+                           String response = dataNodesRepository.get(address).readResponse();
+                           if (response.equals("success")) {
+                               divided.remove(i);
+                           }
+                       } catch (Exception e){
+                           toChangeRepository.add(new ToChange(address,"renameFile ","\"" + pathToMove + "\" ","\"" + path + filenameToMove + "\" "));
+                       }
+                   }
+                   filesRepository.writeFilesInformationFile();
+                    break;
+               }
+           }
+        }
+
+
 
         return "redirect:/";
     }

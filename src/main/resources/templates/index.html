@@ -8,7 +8,7 @@
     <script src="/js/Scripts.js"></script>
     <link rel="icon" type="image/png" href="/fileIcons/database.png">
     <script>
-        function enableEditFolder(name){
+        function enableEditFolder(name) {
 
             document.getElementById(name).innerHTML = "" +
                 "" +
@@ -18,7 +18,8 @@
 
             document.getElementById(name).action = "/changeFolderName";
         }
-        function enableEditFile(name){
+
+        function enableEditFile(name) {
 
             document.getElementById(name).innerHTML = "" +
                 "" +
@@ -28,7 +29,11 @@
 
             document.getElementById(name).action = "/changeFileName";
         }
+
     </script>
+    <script src="/js/jquery.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="/bootstrap/js/bootstrap.bundle.js"></script>
 </head>
 <body class="bg-light">
 <div class="container">
@@ -57,6 +62,19 @@
         <div class="col-md-10 text-left">
             <p th:text="'Ścieżka: ' + ${session.path} "></p>
         </div>
+        <div class="col-md-2">
+            <div class="dropdown">
+                <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="optionsDropdown"
+                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Opcje
+                </button>
+                <div class="dropdown-menu" aria-labelledby="optionsDropdown">
+                    <form method="post" action="/moveFile">
+                        <input class="dropdown-item" type="submit" value="Wklej"/>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
     <hr>
     <div class="row mt-3">
@@ -65,11 +83,10 @@
                 <thead class="thead-light">
                 <tr>
                     <th style="width: 10%">Typ</th>
-                    <th onclick="sortTable(1,'filesListTable')" style="width: 40%;">Nazwa</th>
+                    <th onclick="sortTable(1,'filesListTable')" style="width: 60%;">Nazwa</th>
                     <th onclick="sortTable(2,'filesListTable')" style="width: 10%;">Rozmiar</th>
                     <th onclick="sortTable(3,'filesListTable')" style="width: 10%;">Replikacja</th>
-                    <th style="width: 20%">Akcja</th>
-                    <th style="width: 10%;">Usuń</th>
+                    <th style="width: 10%">Akcja</th>
                 </tr>
                 </thead>
                 <tr th:each="singleObject: ${objectsOnTheList}" th:object="${singleObject}">
@@ -78,45 +95,54 @@
                     <td th:if="${singleObject.type}=='file'">
                         <form method="post" action="/downloadFile" th:id="${singleObject.name}">
                             <input type="hidden" th:name="filename" th:value="${singleObject.name}"/>
-                            <input class="buttonLink" type="submit" draggable="true" th:id="${singleObject.name}" ondragstart="drag(event)" th:value="${singleObject.name}"/>
+                            <input class="buttonLink" type="submit" draggable="true" th:id="${singleObject.name}"
+                                   ondragstart="drag(event)" th:value="${singleObject.name}"/>
                         </form>
                     </td>
                     <td th:if="${singleObject.type}=='folder'">
                         <form method="post" action="/enterFolder" th:id="${singleObject.name}">
                             <input type="hidden" th:name="foldername" th:value="${singleObject.name}"/>
-                            <input class="buttonLink" type="submit" ondragover="allowDrop(event)" th:id="${singleObject.name}" ondrop="drop(event)" th:value="${singleObject.name}"/>
+                            <input class="buttonLink" type="submit" ondragover="allowDrop(event)"
+                                   th:id="${singleObject.name}" ondrop="drop(event)" th:value="${singleObject.name}"/>
                         </form>
                     </td>
                     <td th:text="*{size}"></td>
                     <td th:text="*{replication}"></td>
+                    <td th:if="${singleObject.type}=='file' or (${singleObject.type}=='folder'and ${singleObject.name}!='..')">
+                    <div class="dropdown">
+                        <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Opcje
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
 
+                            <form th:if="${singleObject.type}=='file'" method="post" action="/savePathToMove">
+                                <input type="hidden" th:name="filename" th:value="${singleObject.name}"/>
+                                <input class="dropdown-item" type="submit" value="Wytnij"/>
+                            </form>
 
-                    <td th:if="${singleObject.type}=='file'">
-                        <button name="changeName" id="changeNameFile" th:onclick="'enableEditFile(\'' + ${singleObject.name} + '\');'">Zmień nazwę</button>
-                    </td>
-                    <td th:if="${singleObject.type}=='folder'and ${singleObject.name}!='..'">
-                        <button name="changeName" id="changeNameFolder" th:onclick="'enableEditFolder(\'' + ${singleObject.name} + '\');'">Zmień nazwę</button>
+                            <a class="dropdown-item" href="#" th:onclick="'enableEditFile(\'' + ${singleObject.name} + '\');'" th:if="${singleObject.type}=='file'">Zmień nazwę
+                            </a>
+                            <a class="dropdown-item" href="#" th:onclick="'enableEditFolder(\'' + ${singleObject.name} + '\');'" th:if="${singleObject.type}=='folder'and ${singleObject.name}!='..'">Zmień nazwę</a>
+
+                            <div class="dropdown-divider"></div>
+
+                            <form th:if="${singleObject.type}=='file'" method="post" action="/deleteFile">
+                                <input type="hidden" th:name="filename" th:value="${singleObject.name}"/>
+                                <input class="dropdown-item" type="submit" value="Usuń"/>
+                            </form>
+
+                            <form th:if="${singleObject.type}=='folder'and ${singleObject.name}!='..'" method="post" action="/deleteFolder">
+                                <input type="hidden" th:name="foldername" th:value="${singleObject.name}"/>
+                                <input class="dropdown-item" type="submit" value="Usuń"/>
+                            </form>
+
+                        </div>
+                    </div>
                     </td>
                     <td th:if="${singleObject.type}=='folder'and ${singleObject.name}=='..'">
                         -
                     </td>
-
-                    <td th:if="${singleObject.type}=='file'">
-                        <form method="post" action="/deleteFile">
-                            <input type="hidden" th:name="filename" th:value="${singleObject.name}"/>
-                            <input type="submit" value="usuń"/>
-                        </form>
-                    </td>
-                    <td th:if="${singleObject.type}=='folder'and ${singleObject.name}!='..'">
-                        <form method="post" action="/deleteFolder">
-                            <input type="hidden" th:name="foldername" th:value="${singleObject.name}"/>
-                            <input type="submit" value="usuń"/>
-                        </form>
-                    </td>
-                    <td th:if="${singleObject.type}=='folder'and ${singleObject.name}=='..'">
-                        -
-                    </td>
-
                 </tr>
             </table>
         </div>
@@ -133,18 +159,22 @@
         <p id="errorField4" class="text-danger" th:if="${error}=='noFileToSend'">Nie wybrano pliko do
             wysłania.</p>
         <p id="errorField5" class="text-danger" th:if="${error}=='notEnoughSpace'">Za mało miejsca w
-        systemie aby zapisać plik.</p>
+            systemie aby zapisać plik.</p>
         <p id="errorField6" class="text-danger" th:if="${error}=='fileNotExist'">Wystąpił błąd wewnętrzy,
-        plik nie istnieje w systemie. Sugeruje to zewnętrzą ingerencję w folder przechowujący pliki
-        w węzłach danych.</p>
+            plik nie istnieje w systemie. Sugeruje to zewnętrzą ingerencję w folder przechowujący pliki
+            w węzłach danych.</p>
         <p id="errorField7" class="text-danger" th:if="${error}=='folderNameAlreadyExists'">Nie można było
             zmienić nazwy folderu. Taka nazwa jest już używana.</p>
         <p id="errorField8" class="text-danger" th:if="${error}=='fileNameAlreadyExists'">Nie można było
             zmienić nazwy pliku. Taka nazwa jest już używana. Każdy plik w systemie musi mieć unikatową nazwę.</p>
+        <p id="errorField9" class="text-danger" th:if="${error}=='moveFileFromCutNameAlreadyExists'">Nie przenieść
+            tutaj pliku, bo taka nazwa jest już używana, zmień nazwę pliku przed jego przeniesieniem.</p>
     </div>
 </div>
 <div class="fixed-bottom text-center">
-    Icons made by <a href="https://www.flaticon.com/authors/smashicons" title="smashicons">smashicons</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> are licensed by <a href="http://creativecommons.org/licenses/by/3.0/"     title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a>
+    Icons made by <a href="https://www.flaticon.com/authors/smashicons" title="smashicons">smashicons</a> from <a
+        href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> are licensed by <a
+        href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a>
 </div>
 </div>
 </body>
